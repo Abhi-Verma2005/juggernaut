@@ -3,14 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { 
   Loader2, Upload, FileText, BookOpen, Scale, Calendar, Users, 
   AlertTriangle, FileCheck, CheckCircle2, Gavel, ClipboardList, 
-  BarChart4, FileSearch, ArrowRight, Clock, Info, ChevronRight
+  BarChart4, FileSearch, ArrowRight, Info, ChevronRight
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";

@@ -12,15 +12,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 
+// Define appropriate TypeScript interfaces
+interface Explanations {
+  legalBasis: string;
+  keyPoints: string[];
+  nextSteps: string[];
+}
+
+interface GeneratedResponse {
+  draft: string;
+  explanations: Explanations;
+}
+
 const LegalDraftGenerator = () => {
-  const [documentType, setDocumentType] = useState("");
-  const [userDescription, setUserDescription] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [processingStage, setProcessingStage] = useState(0);
-  const [progressValue, setProgressValue] = useState(0);
-  const [error, setError] = useState(null);
-  const [generatedDraft, setGeneratedDraft] = useState(null);
-  const [explanations, setExplanations] = useState(null);
+  const [documentType, setDocumentType] = useState<string>("");
+  const [userDescription, setUserDescription] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [processingStage, setProcessingStage] = useState<number>(0);
+  const [progressValue, setProgressValue] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedDraft, setGeneratedDraft] = useState<string | null>(null);
+  // Initialize with empty values instead of null to avoid type errors
+  const [explanations, setExplanations] = useState<Explanations>({
+    legalBasis: "",
+    keyPoints: [],
+    nextSteps: []
+  });
 
   const generateLegalDraft = async () => {
     if (!documentType || !userDescription) {
@@ -60,11 +77,11 @@ const LegalDraftGenerator = () => {
                          text.match(/{[\s\S]*}/) ||
                          text.match(/\[[\s\S]*\]/);
           
-          let parsedResponse;
+          let parsedResponse: GeneratedResponse;
           if (jsonMatch) {
             // Clean up the JSON string to parse it
             const jsonStr = jsonMatch[0].replace(/```json|```/g, '').trim();
-            parsedResponse = JSON.parse(jsonStr);
+            parsedResponse = JSON.parse(jsonStr) as GeneratedResponse;
           } else {
             // If no JSON block found, create a structured response from the text
             parsedResponse = {
@@ -108,7 +125,7 @@ const LegalDraftGenerator = () => {
     }
   };
 
-  const createPromptForDocumentType = (type, description) => {
+  const createPromptForDocumentType = (type: string, description: string): string => {
     const basePrompt = `
     You are an expert legal document generator specializing in Indian legal documents. 
     Generate a professional ${type} based on the following user description.
@@ -157,7 +174,7 @@ const LegalDraftGenerator = () => {
     URL.revokeObjectURL(href);
   };
 
-  const getProcessingStageText = () => {
+  const getProcessingStageText = (): string => {
     switch (processingStage) {
       case 1: return "Analyzing requirements...";
       case 2: return "Drafting document with Indian legal framework...";
