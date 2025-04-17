@@ -11,29 +11,22 @@ export default function Navbar() {
       <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="flex items-center">
           <Link href="/" className="text-2xl font-bold text-slate-900">
-            JUGGERNAUT.
+            Juggernaut.
           </Link>
         </div>
         
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
           <Link href="/" className="text-slate-900 hover:text-blue-500 transition-colors">
             Home
           </Link>
           <div className="relative group">
-            <Link href="/autolegaldraftgenerator" className="text-slate-900 hover:text-blue-500 transition-colors flex items-center">
-            Draft Generator
-            </Link>
           </div>
-          <Link href="/Chat" className="text-slate-900 hover:text-blue-500 transition-colors">
+          <Link href="/flowchart" className="text-slate-900 hover:text-blue-500 transition-colors">
+            Flowchart
+          </Link>
+          <Link href="/chat" className="text-slate-900 hover:text-blue-500 transition-colors">
             Chat
           </Link>
-        </div>
-        
-        <div className="hidden md:block">
-          <Button variant="default" className="bg-gradient-to-r from-blue-500 to-blue-400 text-white">
-            Register
-          </Button>
         </div>
         
         {/* Mobile Navigation Toggle */}
