@@ -154,27 +154,28 @@ export default function Hero() {
           onClick={() => setIsOpen(true)}
           className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all"
         >
-          Get started for FREE!
+          Tell us your Query!
         </Button>
 
-        {/* Search Modal */}
+        {/* Search Modal - Redesigned with subtle white theme and minimal color tints */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-xl shadow-xl">
-            <DialogHeader className="p-6 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
-              <DialogTitle className="text-2xl font-bold">How can we help you today?</DialogTitle>
-              <DialogDescription className="text-blue-50 mt-2">
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white rounded-xl shadow-xl border border-slate-100">
+            <DialogHeader className="p-6 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
+              <div className="mb-1 text-blue-500 text-sm font-medium">AI Legal Assistant</div>
+              <DialogTitle className="text-2xl font-bold text-slate-900">How can we help you today?</DialogTitle>
+              <DialogDescription className="text-slate-600 mt-2">
                 Tell us what legal assistance you need, and we'll find the right solution
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleSearch} className="p-6">
+            <form onSubmit={handleSearch} className="p-6 bg-white">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="E.g., 'How do I file a consumer complaint?'"
-                  className="pl-10 pr-4 py-3 border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-10 pr-4 py-3 border-slate-200 rounded-lg focus:ring-blue-100 focus:border-blue-300 bg-slate-50 text-slate-800"
                   disabled={isProcessing}
                 />
               </div>
@@ -183,38 +184,39 @@ export default function Hero() {
                 <div className="mt-4">
                   <Button 
                     type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center"
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 py-2 rounded-lg flex items-center justify-center transition-all"
                     disabled={!query.trim()}
                   >
-                    Find Legal Solutions <ArrowRight className="ml-2" size={16} />
+                    Find Legal Solutions 
+                    <ArrowRight className="ml-2 text-blue-500" size={16} />
                   </Button>
                 </div>
               )}
               
               {isProcessing && (
                 <div className="mt-6 flex flex-col items-center">
-                  <div className="flex items-center space-x-3 text-slate-700">
-                    <Loader2 className="animate-spin" size={20} />
+                  <div className="flex items-center space-x-3 text-slate-600">
+                    <Loader2 className="animate-spin text-blue-400" size={20} />
                     <span>{getSearchStageText()}</span>
                   </div>
                 </div>
               )}
               
               {aiResponse && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-100">
                   <div className="flex">
-                    <MessageSquare className="text-blue-600 mr-3 mt-1 flex-shrink-0" size={20} />
+                    <MessageSquare className="text-blue-400 mr-3 mt-1 flex-shrink-0" size={20} />
                     <div>
                       <p className="text-slate-800">{aiResponse}</p>
-                      <p className="text-sm text-blue-600 mt-2">Redirecting you to the right place...</p>
+                      <p className="text-sm text-blue-400 mt-2">Redirecting you to the right place...</p>
                     </div>
                   </div>
                 </div>
               )}
             </form>
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-              <p className="text-xs text-slate-500 text-center">
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+              <p className="text-xs text-slate-400 text-center">
                 Your query will be analyzed to direct you to the most helpful legal tool
               </p>
             </div>
