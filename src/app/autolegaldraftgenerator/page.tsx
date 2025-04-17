@@ -1,16 +1,17 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Loader2, FileText, Download, BookOpen, Scale, Calendar, AlertTriangle, FileCheck, Settings, CheckCircle } from "lucide-react";
+import { Loader2, FileText, Download, BookOpen, Scale, Calendar, AlertTriangle, FileCheck, Settings, CheckCircle, Mic, MicOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Define appropriate TypeScript interfaces
 interface Explanations {
@@ -32,12 +33,81 @@ const LegalDraftGenerator = () => {
   const [progressValue, setProgressValue] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [generatedDraft, setGeneratedDraft] = useState<string | null>(null);
+  // Voice recognition states
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [browserSupportsSpeech, setBrowserSupportsSpeech] = useState<boolean>(false);
+  
   // Initialize with empty values instead of null to avoid type errors
   const [explanations, setExplanations] = useState<Explanations>({
     legalBasis: "",
     keyPoints: [],
     nextSteps: []
   });
+
+  // Initialize speech recognition when component mounts
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      setBrowserSupportsSpeech(true);
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN';
+      
+      recognition.onresult = (event: { results: Iterable<unknown> | ArrayLike<unknown>; }) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setUserDescription(prev => {
+          // Only append new transcription if it's different
+          if (transcript && !prev.includes(transcript)) {
+            return prev + ' ' + transcript;
+          }
+          return prev;
+        });
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setError(`Speech recognition error: ${event.error}`);
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        // Only restart if isListening is still true
+        if (isListening) {
+          recognition.start();
+        }
+      };
+      
+      setSpeechRecognition(recognition);
+    }
+    
+    // Cleanup
+    return () => {
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+    };
+  }, []);
+
+  // Toggle listening on/off
+  const toggleListening = () => {
+    if (!speechRecognition) return;
+    
+    if (isListening) {
+      speechRecognition.stop();
+      setIsListening(false);
+    } else {
+      speechRecognition.start();
+      setIsListening(true);
+      setError(null);
+    }
+  };
 
   const generateLegalDraft = async () => {
     if (!documentType || !userDescription) {
@@ -230,15 +300,58 @@ const LegalDraftGenerator = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="requirements" className="text-slate-700 font-medium">Document Requirements</Label>
-                    <Textarea
-                      id="requirements"
-                      placeholder="Describe the specific details, parties involved, terms, conditions, and any other relevant information needed for your legal document..."
-                      className="mt-1.5 min-h-32 border-slate-300 bg-white resize-none"
-                      value={userDescription}
-                      onChange={(e) => setUserDescription(e.target.value)}
-                    />
-                    <p className="text-xs text-slate-500 mt-1.5">Be specific and include all relevant information</p>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <Label htmlFor="requirements" className="text-slate-700 font-medium">Document Requirements</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className={`h-8 px-2 ${isListening ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' : 'border-slate-300 text-slate-700'}`}
+                              onClick={toggleListening}
+                              disabled={!browserSupportsSpeech}
+                            >
+                              {isListening ? 
+                                <><MicOff className="h-4 w-4 mr-1" /> Stop</> : 
+                                <><Mic className="h-4 w-4 mr-1" /> Voice Input</>
+                              }
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {browserSupportsSpeech ? 
+                              (isListening ? "Click to stop voice input" : "Click to start voice input") : 
+                              "Your browser doesn't support speech recognition"
+                            }
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="relative">
+                      <Textarea
+                        id="requirements"
+                        placeholder="Describe the specific details, parties involved, terms, conditions, and any other relevant information needed for your legal document..."
+                        className="min-h-32 border-slate-300 bg-white resize-none"
+                        value={userDescription}
+                        onChange={(e) => setUserDescription(e.target.value)}
+                      />
+                      {isListening && (
+                        <div className="absolute bottom-2 right-2">
+                          <div className="flex items-center space-x-1">
+                            <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span className="text-xs text-red-500 font-medium">Listening...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between mt-1.5">
+                      <p className="text-xs text-slate-500">Be specific and include all relevant information</p>
+                      {browserSupportsSpeech && (
+                        <p className="text-xs text-slate-500">
+                          {isListening ? "Speak clearly - voice input active" : "Click the voice button to dictate"}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>

@@ -1,5 +1,6 @@
-'use client'
-import { MessageCircle, FileText, FileUp, Mail, GitBranch, CheckSquare, Link } from 'lucide-react';
+"use client";
+import { MessageCircle, FileText, FileUp, GitBranch, CheckSquare, Link, Scale, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const features = [
@@ -44,11 +45,24 @@ const features = [
     description: "Enter case details or alleged offenses to receive an estimate of likely penalties, fines, or jail time based on IPC or other relevant laws.",
     color: "bg-red-50",
     link: "/penaltypredictor"
+  },
+  {
+    icon: <Scale size={40} className="text-indigo-500" />,
+    title: "Judgment Outcome Predictor",
+    description: "Get AI-powered predictions on case outcomes, including probability of success, likely verdict, and applicable legal reasoning.",
+    color: "bg-indigo-50",
+    link: "/judicialprediction"
   }
 ];
 
 export default function Features() {
-  const Router = useRouter()
+  const router = useRouter();
+  const [hoveredCard, setHoveredCard] = useState(0);
+
+  const handleCardClick = (link: string) => {
+    router.push(link);
+  };
+
   return (
     <section id="features" className="py-20 bg-white">
       <div className="container mx-auto px-4">
@@ -63,13 +77,21 @@ export default function Features() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <div 
-            key={index}
-            onClick={()=>Router.push(`${feature.link}`)}
-              className={`${feature.color} p-8 rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100`}
+              key={index} 
+              className={`${feature.color} p-8 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden group`}
+              onClick={() => handleCardClick(feature.link)}
+              onMouseEnter={() => setHoveredCard(index)}
+              onMouseLeave={() => setHoveredCard(0)}
             >
               <div className="mb-5">{feature.icon}</div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
               <p className="text-slate-600">{feature.description}</p>
+              
+              <div className={`absolute bottom-4 right-4 transition-all duration-300 transform ${hoveredCard === index ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+                <div className="bg-white p-2 rounded-full shadow-md">
+                  <ArrowRight size={20} className="text-slate-700" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
