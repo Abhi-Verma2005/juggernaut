@@ -9,7 +9,6 @@ import { Lock, User, ArrowRight } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import img3 from '@/images/signin.png';
 
 export default function SignIn() {
   const [username, setUsername] = useState('');
@@ -67,13 +66,6 @@ export default function SignIn() {
         <Card className="bg-white shadow-md border-gray-100">
           <CardHeader className="text-center pb-2 border-b border-gray-100">
             <div className="mx-auto mb-4">
-              <Image 
-                src={img3} 
-                alt="Sign In" 
-                width={120} 
-                height={120} 
-                className="mx-auto"
-              />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-800">
               Enter & Explore
