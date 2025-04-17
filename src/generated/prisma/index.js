@@ -122,7 +122,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/anishsuman/Documents/Projects/okokokokok/law-next-app/src/generated/prisma",
+      "value": "/Users/abhishekverma/Desktop/Cluster/Projects/single-page-dev-portfolio-resource-bundle/juggernaut/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -136,7 +136,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/anishsuman/Documents/Projects/okokokokok/law-next-app/prisma/schema.prisma",
+    "sourceFilePath": "/Users/abhishekverma/Desktop/Cluster/Projects/single-page-dev-portfolio-resource-bundle/juggernaut/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
