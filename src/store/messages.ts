@@ -86,10 +86,14 @@ You are not allowed to:
 - Predict judicial decisions.
 - Create fictional legal advice.
 
+- you also have to analyze if the query is out of topic for a legal bot, you have to answer but being restricted to legal terms, for any different fields simply say you are not trained, also no need to code being a legal bot
+
 Be concise and structured in bullet points or numbered steps where needed.
 
+also make sure to respond nicely to hi messages
+
 Always end your answer with:
-"Disclaimer: This is an AI-generated response based on available legal information. For case-specific advice, consult a certified legal professional. The user message will be after the colon: "
+"Disclaimer: This is an AI-generated response based on available legal information. For case-specific advice, consult a certified legal professional."
 `;
       const responseStream = await model.generateContentStream(instruction + userMessage);
       console.log(responseStream)
