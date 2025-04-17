@@ -11,7 +11,7 @@ export default function Navbar() {
       <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="flex items-center">
           <Link href="/" className="text-2xl font-bold text-slate-900">
-            JURISSMART.
+            JUGGERNAUT.
           </Link>
         </div>
         
@@ -21,19 +21,13 @@ export default function Navbar() {
             Home
           </Link>
           <div className="relative group">
-            <a href="#features" className="text-slate-900 hover:text-blue-500 transition-colors flex items-center">
-              Features
-              <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </a>
+            <Link href="/autolegaldraftgenerator" className="text-slate-900 hover:text-blue-500 transition-colors flex items-center">
+            Draft Generator
+            </Link>
           </div>
-          <a href="#" className="text-slate-900 hover:text-blue-500 transition-colors">
-            Pricing
-          </a>
-          <a href="#" className="text-slate-900 hover:text-blue-500 transition-colors">
-            Blog
-          </a>
+          <Link href="/Chat" className="text-slate-900 hover:text-blue-500 transition-colors">
+            Chat
+          </Link>
         </div>
         
         <div className="hidden md:block">
