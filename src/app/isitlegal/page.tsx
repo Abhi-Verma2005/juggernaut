@@ -163,84 +163,84 @@ const IsItLegalPage = () => {
   };
 
   const getStatusIcon = (status: string | undefined) => {
-    if (!status) return <HelpCircle className="h-10 w-10 text-slate-400" />;
+    if (!status) return <HelpCircle className="h-8 w-8 text-gray-400" />;
     
     switch(status.toUpperCase()) {
       case "VALID":
-        return <CheckCircle className="h-12 w-12 text-green-500" />;
+        return <CheckCircle className="h-8 w-8 text-emerald-600" />;
       case "VOID":
-        return <Ban className="h-12 w-12 text-red-500" />;
+        return <Ban className="h-8 w-8 text-rose-600" />;
       case "VOIDABLE":
-        return <AlertTriangle className="h-12 w-12 text-amber-500" />;
+        return <AlertTriangle className="h-8 w-8 text-amber-600" />;
       default:
-        return <HelpCircle className="h-12 w-12 text-slate-400" />;
+        return <HelpCircle className="h-8 w-8 text-gray-400" />;
     }
   };
 
   const getStatusColor = (status: string | undefined): string => {
-    if (!status) return "bg-slate-50";
+    if (!status) return "bg-gray-50 border-gray-200";
     
     switch(status.toUpperCase()) {
-      case "VALID": return "bg-green-50 border-green-100";
-      case "VOID": return "bg-red-50 border-red-100";
-      case "VOIDABLE": return "bg-amber-50 border-amber-100";
-      default: return "bg-slate-50 border-slate-100";
+      case "VALID": return "bg-emerald-50 border-emerald-200";
+      case "VOID": return "bg-rose-50 border-rose-200";
+      case "VOIDABLE": return "bg-amber-50 border-amber-200";
+      default: return "bg-gray-50 border-gray-200";
     }
   };
 
   const getStatusTextColor = (status: string | undefined): string => {
-    if (!status) return "text-slate-800";
+    if (!status) return "text-gray-800";
     
     switch(status.toUpperCase()) {
-      case "VALID": return "text-green-800";
-      case "VOID": return "text-red-800";
-      case "VOIDABLE": return "text-amber-800";
-      default: return "text-slate-800";
+      case "VALID": return "text-emerald-700";
+      case "VOID": return "text-rose-700";
+      case "VOIDABLE": return "text-amber-700";
+      default: return "text-gray-800";
     }
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen">
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <div className="flex items-center mb-8 space-x-2">
-          <div className="p-2 bg-indigo-100 rounded-lg">
-            <Scale className="h-6 w-6 text-indigo-600" />
+    <div className="bg-gray-50 min-h-screen">
+      <div className="container mx-auto py-10 px-4 max-w-6xl">
+        <div className="flex items-center mb-10 space-x-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Scale className="h-6 w-6 text-blue-700" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Is It Legal?</h1>
-            <p className="text-slate-500 mt-1">Get expert assessment on legal situations under Indian law</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Is It Legal?</h1>
+            <p className="text-gray-600 mt-1 text-sm">Expert legal assessment under Indian law</p>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
-                <CardTitle className="text-xl font-medium flex items-center text-slate-800">
-                  <BookOpen className="h-5 w-5 mr-2 text-indigo-500" />
+            <Card className="shadow-sm border border-gray-200 bg-white overflow-hidden">
+              <CardHeader className="bg-gray-50 border-b border-gray-200 py-4 px-6">
+                <CardTitle className="text-lg font-medium flex items-center text-gray-800">
+                  <BookOpen className="h-4 w-4 mr-2 text-blue-600" />
                   Describe Your Situation
                 </CardTitle>
-                <CardDescription>Provide details for legal assessment</CardDescription>
+                <CardDescription className="text-sm text-gray-500">Provide details for legal assessment</CardDescription>
               </CardHeader>
               <CardContent className="pt-6 pb-2">
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="situation" className="text-slate-700 font-medium">Incident or Situation</Label>
+                    <Label htmlFor="situation" className="text-gray-700 font-medium text-sm">Incident or Situation</Label>
                     <Textarea
                       id="situation"
                       placeholder="Describe the legal situation or incident in detail. Include relevant dates, parties involved, agreements made, and any other important context..."
-                      className="mt-1.5 min-h-40 border-slate-300 bg-white resize-none"
+                      className="mt-1.5 min-h-40 border-gray-300 bg-white resize-none focus:ring-blue-500 focus:border-blue-500"
                       value={incidentDescription}
                       onChange={(e) => setIncidentDescription(e.target.value)}
                     />
-                    <p className="text-xs text-slate-500 mt-1.5">Be specific and provide all relevant details for accurate assessment</p>
+                    <p className="text-xs text-gray-500 mt-1.5">Be specific and provide all relevant details for accurate assessment</p>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-lg">
+              <CardFooter className="px-6 py-4 bg-gray-50 border-t border-gray-200">
                 <Button
                   onClick={assessLegality}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={!incidentDescription || isLoading}
                 >
                   {isLoading ? (
@@ -258,111 +258,114 @@ const IsItLegalPage = () => {
               </CardFooter>
             </Card>
             
-            <div className="mt-6">
-              <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+            <div className="mt-4">
+              <Alert className="bg-amber-50 border border-amber-200 text-amber-800 shadow-sm">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertTitle className="text-amber-800">Legal Disclaimer</AlertTitle>
-                <AlertDescription className="text-amber-700 text-sm">
+                <AlertTitle className="text-amber-800 text-sm font-medium">Legal Disclaimer</AlertTitle>
+                <AlertDescription className="text-amber-700 text-xs">
                   This assessment is for informational purposes only and does not constitute legal advice. Always consult with a qualified lawyer for specific legal guidance.
                 </AlertDescription>
               </Alert>
             </div>
             
             {isLoading && (
-              <Card className="mt-6 shadow-sm border-slate-200">
-                <CardContent className="pt-6 pb-4">
+              <Card className="mt-4 shadow-sm border border-gray-200 bg-white">
+                <CardContent className="pt-4 pb-4">
                   <div className="space-y-3">
                     <div className="flex items-center">
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-gray-700">
                         {getProcessingStageText()}
                       </span>
                     </div>
-                    <Progress value={progressValue} className="h-2 bg-slate-100" />
-                    <p className="text-xs text-slate-500">This may take a moment...</p>
+                    <Progress value={progressValue} className="h-1.5 bg-gray-100" />
+                    <p className="text-xs text-gray-500">This may take a moment...</p>
                   </div>
                 </CardContent>
               </Card>
             )}
             
             {error && (
-              <Alert variant="destructive" className="mt-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+              <Alert variant="destructive" className="mt-4 border border-rose-200 bg-rose-50 text-rose-800">
+                <AlertTriangle className="h-4 w-4 text-rose-600" />
+                <AlertTitle className="text-sm font-medium">Error</AlertTitle>
+                <AlertDescription className="text-xs">{error}</AlertDescription>
               </Alert>
             )}
           </div>
           
           <div className="lg:col-span-2">
             {legalAssessment ? (
-              <div className="space-y-6">
-                {/* New prominent legal status card */}
-                <Card className={`shadow-md border-2 ${getStatusColor(legalAssessment.status)}`}>
-                  <CardContent className="p-6">
+              <div className="space-y-5">
+                {/* Updated legal status card */}
+                <Card className={`shadow-sm border ${getStatusColor(legalAssessment.status)}`}>
+                  <CardContent className="p-5">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-                      <div className="shrink-0">
+                      <div className="shrink-0 flex items-center justify-center rounded-full bg-white shadow-sm h-16 w-16 p-2 border border-gray-100">
                         {getStatusIcon(legalAssessment.status)}
                       </div>
                       <div className="text-center md:text-left">
                         <div className="mb-2">
-                          <span className="text-3xl font-bold uppercase tracking-tight inline-flex items-center gap-2 mb-1">
-                            <span className={getStatusTextColor(legalAssessment.status)}>
-                              {legalAssessment.status}
-                            </span>
+                          <span className={`text-2xl font-bold uppercase tracking-tight ${getStatusTextColor(legalAssessment.status)}`}>
+                            {legalAssessment.status}
                           </span>
                         </div>
-                        <p className="text-lg text-slate-700">{legalAssessment.simpleSummary}</p>
+                        <p className="text-base text-gray-700">{legalAssessment.simpleSummary}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
                 
                 <Tabs defaultValue="assessment" className="w-full">
-                  <TabsList className="grid grid-cols-3 w-full mb-2 bg-slate-100">
-                    <TabsTrigger value="assessment" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
-                      <Scale className="h-4 w-4 mr-2" />
+                  <TabsList className="grid grid-cols-3 w-full mb-2 bg-gray-100 p-1 rounded-md">
+                    <TabsTrigger value="assessment" className="text-sm data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded">
+                      <Scale className="h-3.5 w-3.5 mr-1.5" />
                       Assessment
                     </TabsTrigger>
-                    <TabsTrigger value="examples" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
-                      <FileCheck className="h-4 w-4 mr-2" />
+                    <TabsTrigger value="examples" className="text-sm data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded">
+                      <FileCheck className="h-3.5 w-3.5 mr-1.5" />
                       Similar Cases
                     </TabsTrigger>
-                    <TabsTrigger value="next-steps" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
-                      <Calendar className="h-4 w-4 mr-2" />
+                    <TabsTrigger value="next-steps" className="text-sm data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded">
+                      <Calendar className="h-3.5 w-3.5 mr-1.5" />
                       Next Steps
                     </TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="assessment" className="mt-0">
-                    <Card className="shadow-sm border-slate-200">
-                      <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
-                        <CardTitle className="text-lg font-medium text-slate-800">Legal Analysis</CardTitle>
+                    <Card className="shadow-sm border border-gray-200 bg-white">
+                      <CardHeader className="bg-gray-50 border-b border-gray-200 py-3 px-5">
+                        <CardTitle className="text-base font-medium text-gray-800">Legal Analysis</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-6 space-y-4">
-                        <div className="bg-white p-4 rounded-md border border-slate-200">
-                          <h3 className="text-md font-medium text-slate-800 mb-2">Explanation</h3>
-                          <p className="text-sm text-slate-700">{legalAssessment.explanation}</p>
+                      <CardContent className="p-5 space-y-4">
+                        <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
+                          <h3 className="text-sm font-medium text-gray-800 mb-2">Explanation</h3>
+                          <p className="text-sm text-gray-600 leading-relaxed">{legalAssessment.explanation}</p>
                         </div>
                         
-                        <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
-                          <h3 className="text-md font-medium text-slate-800 mb-2">Legal Basis</h3>
-                          <p className="text-sm text-slate-700">{legalAssessment.legalBasis}</p>
+                        <div className="bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm">
+                          <h3 className="text-sm font-medium text-gray-800 mb-2">Legal Basis</h3>
+                          <p className="text-sm text-gray-600 leading-relaxed">{legalAssessment.legalBasis}</p>
                         </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
                   
                   <TabsContent value="examples" className="mt-0">
-                    <Card className="shadow-sm border-slate-200">
-                      <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
-                        <CardTitle className="text-lg font-medium text-slate-800">Similar Cases & Examples</CardTitle>
+                    <Card className="shadow-sm border border-gray-200 bg-white">
+                      <CardHeader className="bg-gray-50 border-b border-gray-200 py-3 px-5">
+                        <CardTitle className="text-base font-medium text-gray-800">Similar Cases & Examples</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-6">
-                        <div className="space-y-4">
+                      <CardContent className="p-5">
+                        <div className="space-y-3">
                           {legalAssessment.examples.map((example, index) => (
-                            <div key={index} className="bg-white p-4 rounded-md border border-slate-200">
-                              <h3 className="text-md font-medium text-slate-800 mb-2">Example {index + 1}</h3>
-                              <p className="text-sm text-slate-700">{example}</p>
+                            <div key={index} className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
+                              <h3 className="text-sm font-medium text-gray-800 mb-2 flex items-center">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xs font-medium text-blue-600 mr-2">
+                                  {index + 1}
+                                </span>
+                                Example
+                              </h3>
+                              <p className="text-sm text-gray-600 leading-relaxed">{example}</p>
                             </div>
                           ))}
                         </div>
@@ -371,19 +374,19 @@ const IsItLegalPage = () => {
                   </TabsContent>
                   
                   <TabsContent value="next-steps" className="mt-0">
-                    <Card className="shadow-sm border-slate-200">
-                      <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
-                        <CardTitle className="text-lg font-medium text-slate-800">Recommended Next Steps</CardTitle>
+                    <Card className="shadow-sm border border-gray-200 bg-white">
+                      <CardHeader className="bg-gray-50 border-b border-gray-200 py-3 px-5">
+                        <CardTitle className="text-base font-medium text-gray-800">Recommended Next Steps</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-6">
-                        <div className="bg-white p-4 rounded-md border border-slate-200">
+                      <CardContent className="p-5">
+                        <div className="bg-white p-4 rounded-md border border-gray-200 shadow-sm">
                           <ul className="space-y-3">
                             {legalAssessment.nextSteps.map((step, index) => (
                               <li key={index} className="flex items-start">
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-xs font-medium text-indigo-600">
+                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xs font-medium text-blue-600">
                                   {index + 1}
                                 </span>
-                                <span className="ml-3 text-sm text-slate-700">{step}</span>
+                                <span className="ml-3 text-sm text-gray-600">{step}</span>
                               </li>
                             ))}
                           </ul>
@@ -393,10 +396,10 @@ const IsItLegalPage = () => {
                   </TabsContent>
                 </Tabs>
                 
-                <Alert className="bg-indigo-50 border-indigo-100 text-indigo-800">
-                  <AlertTriangle className="h-4 w-4 text-indigo-500" />
-                  <AlertTitle className="text-indigo-800 font-medium">Important Notice</AlertTitle>
-                  <AlertDescription className="text-indigo-700 text-sm">
+                <Alert className="bg-blue-50 border border-blue-200 text-blue-800 shadow-sm">
+                  <AlertTriangle className="h-4 w-4 text-blue-600" />
+                  <AlertTitle className="text-blue-800 font-medium text-sm">Important Notice</AlertTitle>
+                  <AlertDescription className="text-blue-700 text-xs">
                     This assessment is AI-generated based on the information provided and general legal principles.
                     Every legal situation has unique aspects that may affect the outcome. For specific advice related
                     to your situation, please consult with a qualified legal professional.
@@ -404,15 +407,15 @@ const IsItLegalPage = () => {
                 </Alert>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[400px] rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-                <div className="space-y-2">
+              <div className="flex items-center justify-center h-full min-h-[400px] rounded-lg border border-gray-200 bg-white p-10 text-center shadow-sm">
+                <div className="space-y-3">
                   <div className="flex justify-center">
-                    <div className="rounded-full bg-slate-100 p-3">
-                      <Scale className="h-6 w-6 text-slate-400" />
+                    <div className="rounded-full bg-gray-100 p-3 border border-gray-200">
+                      <Scale className="h-6 w-6 text-gray-400" />
                     </div>
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">No legal assessment yet</h3>
-                  <p className="text-sm text-slate-500 max-w-md">
+                  <h3 className="text-lg font-medium text-gray-900">No legal assessment yet</h3>
+                  <p className="text-sm text-gray-500 max-w-md">
                     Describe your legal situation in detail on the left to receive an expert assessment based on Indian law.
                   </p>
                 </div>
