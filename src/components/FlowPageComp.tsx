@@ -1,181 +1,246 @@
 "use client";
-import { useState, useCallback } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import {
-  ReactFlow,
-  MiniMap,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  Node,
-  Connection,
-  Edge,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Loader2, FileText, Download, BookOpen, Scale, Calendar, AlertTriangle, FileCheck, Settings, CheckCircle, Mic, MicOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, MessageSquare, AlertTriangle, Download, Info, Scale } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-type NodeData = {
-  label: string;
-};
+// Define appropriate TypeScript interfaces
+interface Explanations {
+  legalBasis: string;
+  keyPoints: string[];
+  nextSteps: string[];
+}
 
-type Message = {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: Date;
-};
+interface GeneratedResponse {
+  draft: string;
+  explanations: Explanations;
+}
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+// Define the necessary interfaces if they're not available from TypeScript DOM lib
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
 
-export default function AIFlowGenerator() {
-  const [prompt, setPrompt] = useState<string>("");
-  const [messages, setMessages] = useState<Message[]>([]);
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: unknown;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+  }
+}
+
+const LegalDraftGenerator = () => {
+  const [documentType, setDocumentType] = useState<string>("");
+  const [userDescription, setUserDescription] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [flowchartGenerated, setFlowchartGenerated] = useState<boolean>(false);
   const [processingStage, setProcessingStage] = useState<number>(0);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  //@ts-expect-error: no need here
-  const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [generatedDraft, setGeneratedDraft] = useState<string | null>(null);
+  // Voice recognition states
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [browserSupportsSpeech, setBrowserSupportsSpeech] = useState<boolean>(false);
+  
+  // Initialize with empty values instead of null to avoid type errors
+  const [explanations, setExplanations] = useState<Explanations>({
+    legalBasis: "",
+    keyPoints: [],
+    nextSteps: []
+  });
 
-  const onConnect = useCallback(
-    (params: Connection) =>
-      //@ts-expect-error: no need here
-      setEdges((eds) => addEdge({ ...params, animated: true, style: { stroke: "#3b82f6" } }, eds)),
-    [setEdges]
-  );
-
-  // Parse the AI response and create a flowchart
-  const parseFlowchartSteps = (text: string) => {
-    // Split the text into lines and filter to get only numbered steps
-    const lines = text.split('\n');
-    const stepLines = lines.filter(line => /^\d+\./.test(line.trim()));
+  // Initialize speech recognition when component mounts
+  useEffect(() => {
+    // Check if browser supports SpeechRecognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
-    // Create nodes from steps
-    const newNodes: Node<NodeData>[] = stepLines.map((step, index) => {
-      // Extract step content (removing the number and period)
-      const stepContent = step.replace(/^\d+\.\s*/, '').trim();
+    if (SpeechRecognition) {
+      setBrowserSupportsSpeech(true);
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN'; // Set language to Indian English
       
-      return {
-        id: `node-${index}`,
-        data: { label: stepContent },
-        position: { x: 250, y: index * 100 },
-        style: {
-          background: '#f0f9ff',
-          border: '1px solid #93c5fd',
-          borderRadius: '8px',
-          padding: '10px',
-          width: 200,
-        },
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setUserDescription(prev => {
+          // Only append new transcription if it's different
+          if (transcript && !prev.includes(transcript)) {
+            return prev + ' ' + transcript;
+          }
+          return prev;
+        });
       };
-    });
-    
-    // Create edges between consecutive steps
-    const newEdges: Edge[] = [];
-    for (let i = 0; i < newNodes.length - 1; i++) {
-      newEdges.push({
-        id: `edge-${i}-${i+1}`,
-        source: `node-${i}`,
-        target: `node-${i+1}`,
-        animated: true,
-        style: { stroke: "#3b82f6" },
-      });
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setError(`Speech recognition error: ${event.error}`);
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        // Only restart if isListening is still true
+        if (isListening) {
+          recognition.start();
+        }
+      };
+      
+      setSpeechRecognition(recognition);
     }
     
-    // Update state
-    //@ts-expect-error: no need here
-    setNodes(newNodes);
-    //@ts-expect-error: no need here
-    setEdges(newEdges);
+    // Cleanup
+    return () => {
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+    };
+  }, [isListening, speechRecognition]);
+
+  // Toggle listening on/off
+  const toggleListening = () => {
+    if (!speechRecognition) return;
     
-    // Mark that the flowchart has been generated
-    setFlowchartGenerated(true);
+    if (isListening) {
+      speechRecognition.stop();
+      setIsListening(false);
+    } else {
+      speechRecognition.start();
+      setIsListening(true);
+      setError(null);
+    }
   };
 
-  const generateFlowchart = async (userMessage: string) => {
-    const aiMessageId = Date.now() + 1 + '';
-    
-    // Temporarily store the message but don't display it yet
-    const tempMessages = [
-      {
-        id: aiMessageId,
-        text: 'Generating flowchart...',
-        sender: 'ai' as const,
-        timestamp: new Date(),
-      }
-    ];
-  
+  const generateLegalDraft = async () => {
+    if (!documentType || !userDescription) {
+      setError("Please select a document type and provide requirements");
+      return;
+    }
+
     try {
+      setIsLoading(true);
+      setError(null);
       setProcessingStage(1);
       setProgressValue(25);
       
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const flowchartPrompt = `Your name is Juggernaut, also known as Jugg. 
-You are an AI expert in legal documentation and visualization. Your sole task is to convert legal processes into step-by-step flowcharts.
-
-Guidelines:
-- Respond strictly in a numbered list format (1., 2., 3., etc.)
-- Each step must be a clear and complete short title (around 10–20 words) so that someone unfamiliar with the law can easily understand the action to be taken.
-- Maintain chronological and procedural order of the legal process.
-- No paragraph or conversational text — only flowchart-ready steps.
-- Avoid assumptions. If steps vary by condition, state them separately and clearly.
-- Never generate visual diagrams, only provide the logical flow as numbered steps.
-- Do not include any disclaimers or side-notes in this case.
-- Do not make too big points not too small, good enough to understand.
-
-Example:
-1. Cheque bounce occurs due to insufficient funds or invalid account
-2. Send a legal notice to the issuer within 30 days of cheque return
-3. Wait 15 days after notice delivery for a valid payment response
-4. If no payment is made, file a complaint under Section 138 of the NI Act
-...
-
-Now respond with the legal flowchart steps for: `;
-      const fullPrompt = flowchartPrompt + userMessage;
-  
+      // Initialize the Gemini API client
+      const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "YOUR_API_KEY";
+      const genAI = new GoogleGenerativeAI(API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      
+      // Create prompt based on document type
+      const prompt = createPromptForDocumentType(documentType, userDescription);
+      
       setProcessingStage(2);
       setProgressValue(50);
       
-      const result = await model.generateContent(fullPrompt);
-      const text = result.response.text();
-  
-      const beautified = text
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/\*(.*?)\*/g, '$1');
-  
-      // Update the AI message with the actual response
-      tempMessages[0].text = beautified;
-      
-      setProcessingStage(3);
-      setProgressValue(75);
-      
-      // Parse the response and create flowchart
-      parseFlowchartSteps(beautified);
-      
-      setProgressValue(100);
-      
-      // Now that everything is ready, update the messages state
-      setMessages(prevMessages => [...prevMessages, ...tempMessages]);
-      setError(null);
-      
-    } catch (error) {
-      console.error("Flowchart generation error:", error);
-  
-      // Update the AI message with error information
-      tempMessages[0].text = "Error: Could not generate flowchart.";
-      setMessages(prevMessages => [...prevMessages, ...tempMessages]);
-      setFlowchartGenerated(true); // End the loading state even on error
-      setError("Failed to generate flowchart. Please try again.");
+      try {
+        // Make the API call to Gemini
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+        
+        setProgressValue(75);
+        
+        // Parse the JSON response
+        try {
+          // Look for a JSON block in the text
+          const jsonMatch = text.match(/```json([\s\S]*?)```/) || 
+                         text.match(/{[\s\S]*}/) ||
+                         text.match(/\[[\s\S]*\]/);
+          
+          let parsedResponse: GeneratedResponse;
+          if (jsonMatch) {
+            // Clean up the JSON string to parse it
+            const jsonStr = jsonMatch[0].replace(/```json|```/g, '').trim();
+            parsedResponse = JSON.parse(jsonStr) as GeneratedResponse;
+          } else {
+            // If no JSON block found, create a structured response from the text
+            parsedResponse = {
+              draft: text,
+              explanations: {
+                legalBasis: "Based on relevant Indian legal provisions",
+                keyPoints: ["Generated based on your requirements"],
+                nextSteps: ["Review the draft", "Consult with a legal professional before finalizing"]
+              }
+            };
+          }
+          
+          setGeneratedDraft(parsedResponse.draft);
+          setExplanations(parsedResponse.explanations);
+        } catch (jsonError) {
+          console.error("Failed to parse JSON from Gemini response:", jsonError);
+          // Fallback: use the text as is
+          setGeneratedDraft(text);
+          setExplanations({
+            legalBasis: "Based on relevant Indian legal provisions",
+            keyPoints: ["Generated based on your requirements"],
+            nextSteps: ["Review the draft", "Consult with a legal professional before finalizing"]
+          });
+        }
+        
+        setProcessingStage(3);
+        setProgressValue(100);
+      } catch (apiError) {
+        console.error("Error calling Gemini API:", apiError);
+        setError("Failed to generate draft. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error generating legal draft:", err);
+      setError("Failed to generate draft. Please try again.");
     } finally {
       setTimeout(() => {
         setIsLoading(false);
@@ -185,66 +250,62 @@ Now respond with the legal flowchart steps for: `;
     }
   };
 
-  // Handle prompt submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const createPromptForDocumentType = (type: string, description: string): string => {
+    const basePrompt = `
+    You are an expert legal document generator specializing in Indian legal documents. 
+    Generate a professional ${type} based on the following user description.
     
-    if (!prompt.trim()) return;
+    The document must strictly adhere to Indian judicial laws and legal standards. Include all necessary clauses, 
+    provisions, and formatting required for such documents in India.
     
-    // Add user message immediately
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: prompt,
-      sender: 'user',
-      timestamp: new Date()
-    };
+    Respond with a JSON object that contains two properties:
+    1. "draft" - The complete legal document text with proper formatting and clauses
+    2. "explanations" - An object containing:
+       - "legalBasis": explanation of the legal foundation for this document
+       - "keyPoints": array of the most important aspects of the document
+       - "nextSteps": array of what the user should do next with this document
     
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-    setFlowchartGenerated(false); // Reset flowchart generation status
-    setError(null);
-    
-    try {
-      // Clear any existing flowchart
-      setNodes([]);
-      setEdges([]);
-      
-      // Generate flowchart
-      generateFlowchart(prompt);
-    } catch (error) {
-      console.error("Error processing request:", error);
-      setIsLoading(false);
-      setFlowchartGenerated(true);
-      setError("Failed to process request. Please try again.");
+    Format your response like this:
+    {
+      "draft": "FULL TEXT OF THE LEGAL DOCUMENT WITH PROPER FORMATTING",
+      "explanations": {
+        "legalBasis": "Explanation of Indian laws relevant to this document",
+        "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
+        "nextSteps": ["Step 1", "Step 2", "Step 3"]
+      }
     }
     
-    setPrompt("");
-  };
-
-  const getProcessingStageText = (): string => {
-    switch (processingStage) {
-      case 1: return "Analyzing legal process...";
-      case 2: return "Extracting steps for visualization...";
-      case 3: return "Building flowchart...";
-      default: return "Processing...";
-    }
-  };
-
-  const downloadFlowchartAsJSON = () => {
-    if (nodes.length === 0) return;
+    User's requirements:
+    ${description}
+    `;
     
-    const data = { nodes, edges };
-    const jsonString = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    return basePrompt;
+  };
+
+  const downloadDraft = () => {
+    if (!generatedDraft) return;
+    
+    const fileName = `${documentType.replace(/\s+/g, '-').toLowerCase()}-draft.txt`;
+    const fileContent = generatedDraft;
+    const blob = new Blob([fileContent], { type: 'text/plain' });
     const href = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = href;
-    link.download = 'legal-flowchart.json';
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(href);
+  };
+
+  const getProcessingStageText = (): string => {
+    switch (processingStage) {
+      case 1: return "Analyzing requirements...";
+      case 2: return "Drafting document with Indian legal framework...";
+      case 3: return "Finalizing document...";
+      default: return "Processing...";
+    }
   };
 
   return (
@@ -255,8 +316,8 @@ Now respond with the legal flowchart steps for: `;
             <Scale className="h-6 w-6 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Legal Flowchart Generator</h1>
-            <p className="text-slate-500 mt-1">Create step-by-step visualization of legal processes using AI</p>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Legal Draft Generator</h1>
+            <p className="text-slate-500 mt-1">Generate professional legal documents compliant with Indian judicial laws</p>
           </div>
         </div>
         
@@ -265,47 +326,105 @@ Now respond with the legal flowchart steps for: `;
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
                 <CardTitle className="text-xl font-medium flex items-center text-slate-800">
-                  <Info className="h-5 w-5 mr-2 text-indigo-500" />
-                  Process Description
+                  <Settings className="h-5 w-5 mr-2 text-indigo-500" />
+                  Document Parameters
                 </CardTitle>
-                <CardDescription>Describe the legal process to visualize</CardDescription>
+                <CardDescription>Configure your legal document</CardDescription>
               </CardHeader>
               <CardContent className="pt-6 pb-2">
-                <form onSubmit={handleSubmit}>
-                  <div className="space-y-6">
-                    <div>
+                <div className="space-y-6">
+                  <div>
+                    <Label htmlFor="document-type" className="text-slate-700 font-medium">Document Type</Label>
+                    <Select value={documentType} onValueChange={setDocumentType}>
+                      <SelectTrigger id="document-type" className="mt-1.5 border-slate-300 bg-white">
+                        <SelectValue placeholder="Select document type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Legal Notice">Legal Notice</SelectItem>
+                        <SelectItem value="Rent Agreement">Rent Agreement</SelectItem>
+                        <SelectItem value="Employment Contract">Employment Contract</SelectItem>
+                        <SelectItem value="Non-Disclosure Agreement">Non-Disclosure Agreement</SelectItem>
+                        <SelectItem value="Partnership Deed">Partnership Deed</SelectItem>
+                        <SelectItem value="Will">Will</SelectItem>
+                        <SelectItem value="Affidavit">Affidavit</SelectItem>
+                        <SelectItem value="Power of Attorney">Power of Attorney</SelectItem>
+                        <SelectItem value="Service Agreement">Service Agreement</SelectItem>
+                        <SelectItem value="Sale Deed">Sale Deed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <Label htmlFor="requirements" className="text-slate-700 font-medium">Document Requirements</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className={`h-8 px-2 ${isListening ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' : 'border-slate-300 text-slate-700'}`}
+                              onClick={toggleListening}
+                              disabled={!browserSupportsSpeech}
+                            >
+                              {isListening ? 
+                                <><MicOff className="h-4 w-4 mr-1" /> Stop</> : 
+                                <><Mic className="h-4 w-4 mr-1" /> Voice Input</>
+                              }
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {browserSupportsSpeech ? 
+                              (isListening ? "Click to stop voice input" : "Click to start voice input") : 
+                              "Your browser doesn't support speech recognition"
+                            }
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="relative">
                       <Textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
+                        id="requirements"
+                        placeholder="Describe the specific details, parties involved, terms, conditions, and any other relevant information needed for your legal document..."
                         className="min-h-32 border-slate-300 bg-white resize-none"
-                        placeholder="Describe a legal process (e.g., 'Steps in filing a trademark', 'Divorce procedure')..."
+                        value={userDescription}
+                        onChange={(e) => setUserDescription(e.target.value)}
                       />
-                      <p className="text-xs text-slate-500 mt-1.5">Be specific about the legal process you want to visualize</p>
+                      {isListening && (
+                        <div className="absolute bottom-2 right-2">
+                          <div className="flex items-center space-x-1">
+                            <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span className="text-xs text-red-500 font-medium">Listening...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between mt-1.5">
+                      <p className="text-xs text-slate-500">Be specific and include all relevant information</p>
+                      {browserSupportsSpeech && (
+                        <p className="text-xs text-slate-500">
+                          {isListening ? "Speak clearly - voice input active" : "Click the voice button to dictate"}
+                        </p>
+                      )}
                     </div>
                   </div>
-                
-                  <div className="pt-4 pb-2">
-                    <Button
-                      type="submit"
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                      disabled={!prompt.trim() || isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>Generate Flowchart</>
-                      )}
-                    </Button>
-                  </div>
-                </form>
+                </div>
               </CardContent>
               <CardFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-lg">
-                <div className="text-xs text-slate-500">
-                  Powered by Juggernaut AI
-                </div>
+                <Button
+                  onClick={generateLegalDraft}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  disabled={!documentType || !userDescription || isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>Generate Document</>
+                  )}
+                </Button>
               </CardFooter>
             </Card>
             
@@ -314,7 +433,7 @@ Now respond with the legal flowchart steps for: `;
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <AlertTitle className="text-amber-800">Legal Disclaimer</AlertTitle>
                 <AlertDescription className="text-amber-700 text-sm">
-                  The flowcharts generated are for reference only. Always consult with a qualified legal professional for accurate legal advice.
+                  The documents generated are for reference only. Always consult with a qualified legal professional before using any document for official purposes.
                 </AlertDescription>
               </Alert>
             </div>
@@ -345,119 +464,109 @@ Now respond with the legal flowchart steps for: `;
           </div>
           
           <div className="lg:col-span-2">
-            {flowchartGenerated && messages.length > 0 ? (
+            {generatedDraft ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    {/* <FlowChart className="h-5 w-5 text-indigo-500 mr-2" /> */}
-                    <h2 className="text-xl font-semibold tracking-tight text-slate-800">Generated Flowchart</h2>
-                    {prompt && <Badge className="ml-3 bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border-0">
-                      {prompt.length > 20 ? `${prompt.substring(0, 20)}...` : prompt}
-                    </Badge>}
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                    <h2 className="text-xl font-semibold tracking-tight text-slate-800">Generated Document</h2>
+                    <Badge className="ml-3 bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border-0">{documentType}</Badge>
                   </div>
-                  {nodes.length > 0 && (
-                    <Button onClick={downloadFlowchartAsJSON} variant="outline" className="flex items-center border-slate-300 hover:bg-slate-50 text-slate-700">
-                      <Download className="h-4 w-4 mr-2 text-slate-500" />
-                      Download
-                    </Button>
-                  )}
+                  <Button onClick={downloadDraft} variant="outline" className="flex items-center border-slate-300 hover:bg-slate-50 text-slate-700">
+                    <Download className="h-4 w-4 mr-2 text-slate-500" />
+                    Download
+                  </Button>
                 </div>
                 
-                <Tabs defaultValue="flowchart" className="w-full">
+                <Tabs defaultValue="draft" className="w-full">
                   <TabsList className="grid grid-cols-2 w-full mb-2 bg-slate-100">
-                    <TabsTrigger value="flowchart" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
-                      {/* <FlowChart className="h-4 w-4 mr-2" /> */}
-                      Flowchart View
+                    <TabsTrigger value="draft" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Draft Document
                     </TabsTrigger>
-                    <TabsTrigger value="conversation" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Conversation
+                    <TabsTrigger value="explanation" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Legal Explanation
                     </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="flowchart" className="mt-0">
+                  <TabsContent value="draft" className="mt-0">
                     <Card className="shadow-sm border-slate-200">
                       <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg font-medium text-slate-800">Legal Process Visualization</CardTitle>
+                          <CardTitle className="text-lg font-medium text-slate-800">Document Preview</CardTitle>
                           <Badge variant="outline" className="border-slate-300 text-slate-600 text-xs font-normal">
                             {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </Badge>
                         </div>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <div style={{ height: 500 }} className="bg-slate-50">
-                          {nodes.length > 0 ? (
-                            <ReactFlow
-                              //@ts-expect-error: no need here
-                              nodes={nodes}
-                              edges={edges}
-                              //@ts-expect-error: no need here 
-                              onNodesChange={onNodesChange}
-                              onEdgesChange={onEdgesChange}
-                              onConnect={onConnect}
-                              fitView
-                              attributionPosition="bottom-right"
-                            >
-                              <Controls position="bottom-right" />
-                              <MiniMap />
-                              <Background color="#f1f5f9" gap={16} />
-                            </ReactFlow>
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <p>No flowchart data available</p>
-                            </div>
-                          )}
+                        <div className="bg-white p-6 whitespace-pre-wrap font-serif text-sm text-slate-800 leading-relaxed max-h-[600px] overflow-y-auto border-b border-slate-100">
+                          {generatedDraft}
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-end py-3 px-6 bg-slate-50 border-t border-slate-100">
-                        {nodes.length > 0 && (
-                          <Button onClick={downloadFlowchartAsJSON} variant="outline" className="flex items-center border-slate-300 hover:bg-slate-100 text-slate-700">
-                            <Download className="h-4 w-4 mr-2 text-slate-500" />
-                            Download Flowchart
-                          </Button>
-                        )}
+                        <Button onClick={downloadDraft} variant="outline" className="flex items-center border-slate-300 hover:bg-slate-100 text-slate-700">
+                          <Download className="h-4 w-4 mr-2 text-slate-500" />
+                          Download Document
+                        </Button>
                       </CardFooter>
                     </Card>
                   </TabsContent>
                   
-                  <TabsContent value="conversation" className="mt-0">
+                  <TabsContent value="explanation" className="mt-0">
                     <Card className="shadow-sm border-slate-200">
                       <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
-                        <CardTitle className="text-lg font-medium text-slate-800">Conversation History</CardTitle>
+                        <CardTitle className="text-lg font-medium text-slate-800">Legal Analysis</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0">
-                        <div className="max-h-[500px] overflow-y-auto p-4 space-y-4">
-                          {messages.map((message) => (
-                            <div 
-                              key={message.id} 
-                              className={`p-3 rounded-lg ${
-                                message.sender === 'user' 
-                                  ? 'bg-blue-50 border border-blue-100 ml-auto mr-0 max-w-[85%]' 
-                                  : 'bg-slate-50 border border-slate-100 ml-0 mr-auto max-w-[85%]'
-                              }`}
-                            >
-                              <div className="font-medium mb-1 text-xs text-slate-600">
-                                {message.sender === 'user' ? 'You:' : 'Juggernaut AI:'}
-                              </div>
-                              <div className="text-sm text-slate-800 whitespace-pre-wrap">{message.text}</div>
-                              <div className="text-xs text-slate-400 mt-1 text-right">
-                                {message.timestamp.toLocaleTimeString()}
-                              </div>
+                      <CardContent className="p-6 space-y-6">
+                        {explanations && (
+                          <>
+                            <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
+                              <h3 className="text-md font-medium flex items-center mb-2 text-slate-800">
+                                <Scale className="h-4 w-4 mr-2 text-indigo-500" />
+                                Legal Basis
+                              </h3>
+                              <p className="text-sm text-slate-700">{explanations.legalBasis}</p>
                             </div>
-                          ))}
-                        </div>
+                            
+                            <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
+                              <h3 className="text-md font-medium flex items-center mb-2 text-slate-800">
+                                <FileCheck className="h-4 w-4 mr-2 text-indigo-500" />
+                                Key Points
+                              </h3>
+                              <ul className="space-y-2 pl-6">
+                                {explanations.keyPoints.map((point, index) => (
+                                  <li key={index} className="text-sm text-slate-700 list-disc">{point}</li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div className="bg-slate-50 p-4 rounded-md border border-slate-200">
+                              <h3 className="text-md font-medium flex items-center mb-2 text-slate-800">
+                                <Calendar className="h-4 w-4 mr-2 text-indigo-500" />
+                                Next Steps
+                              </h3>
+                              <ul className="space-y-2 pl-6">
+                                {explanations.nextSteps.map((step, index) => (
+                                  <li key={index} className="text-sm text-slate-700 list-disc">{step}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </>
+                        )}
                       </CardContent>
                     </Card>
                   </TabsContent>
                 </Tabs>
                 
                 <Alert className="bg-indigo-50 border-indigo-100 text-indigo-800">
-                  <Info className="h-4 w-4 text-indigo-500" />
+                  <AlertTriangle className="h-4 w-4 text-indigo-500" />
                   <AlertTitle className="text-indigo-800 font-medium">Important Notice</AlertTitle>
                   <AlertDescription className="text-indigo-700 text-sm">
-                    This flowchart represents a general framework of the legal process. Local regulations and specific circumstances 
-                    may require additional steps. Consult with a legal professional for personalized guidance.
+                    This document is AI-generated based on your requirements and is not a substitute for legal advice.
+                    Before using this document for any official purpose, please consult with a qualified legal professional
+                    to ensure it meets your specific needs and complies with current Indian law.
                   </AlertDescription>
                 </Alert>
               </div>
@@ -466,12 +575,12 @@ Now respond with the legal flowchart steps for: `;
                 <div className="space-y-2">
                   <div className="flex justify-center">
                     <div className="rounded-full bg-slate-100 p-3">
-                      {/* <FlowChart className="h-6 w-6 text-slate-400" /> */}
+                      <FileText className="h-6 w-6 text-slate-400" />
                     </div>
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">No flowchart generated yet</h3>
+                  <h3 className="text-lg font-medium text-slate-900">No document generated yet</h3>
                   <p className="text-sm text-slate-500 max-w-md">
-                    Describe a legal process and submit your query to generate a step-by-step visualization.
+                    Select a document type and provide your requirements to generate a legal document that adheres to Indian judicial laws.
                   </p>
                 </div>
               </div>
@@ -481,4 +590,6 @@ Now respond with the legal flowchart steps for: `;
       </div>
     </div>
   );
-}
+};
+
+export default LegalDraftGenerator;
