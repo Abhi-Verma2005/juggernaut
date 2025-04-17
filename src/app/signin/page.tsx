@@ -10,7 +10,7 @@ function SignInPage() {
   const Router = useRouter()
   useEffect(() => {
     if (session?.user?.email) {
-      Router.push('/user/dashboard')
+      Router.push('/')
     }
   }, [session])
   return (

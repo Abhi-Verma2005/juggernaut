@@ -35,7 +35,7 @@ export default function SignIn() {
       if(result.url) {
         toast.success('Signed In Successfully');
         setTimeout(() => {
-          router.push('/user/dashboard');
+          router.push('/');
         }, 1000);
       }
       
@@ -50,7 +50,7 @@ export default function SignIn() {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signIn('google', { callbackUrl: '/user/dashboard' });
+      await signIn('google', { callbackUrl: '/' });
     } catch (error) {
       console.error(error);
       toast.error('Google sign-in failed. Please try again.');
