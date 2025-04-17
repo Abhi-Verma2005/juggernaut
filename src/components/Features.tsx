@@ -44,7 +44,7 @@ const features = [
     title: "Penalty Predictor",
     description: "Enter case details or alleged offenses to receive an estimate of likely penalties, fines, or jail time based on IPC or other relevant laws.",
     color: "bg-red-50",
-    link: "/penaltypredictor"
+    link: "/penaltyPredictor"
   },
   {
     icon: <Scale size={40} className="text-indigo-500" />,

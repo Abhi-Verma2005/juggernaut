@@ -127,7 +127,6 @@ const ChatComponent: React.FC = () => {
 
   const isEmpty = input.trim() === '';
 
-  // Function to get tone indicator text/icon for display
   const getToneIndicator = () => {
     const tone = tones.find(t => t.id === currentTone);
     return tone?.name || "Juggernaut";
