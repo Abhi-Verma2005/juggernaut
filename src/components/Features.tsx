@@ -37,6 +37,13 @@ const features = [
     description: "Ask simple legal compliance questions and get clear YES/NO answers with relevant sections and legal justification.",
     color: "bg-teal-50",
     link: "/isitlegal"
+  },
+  {
+    icon: <Link size={40} className="text-red-500" />,
+    title: "Penalty Predictor",
+    description: "Enter case details or alleged offenses to receive an estimate of likely penalties, fines, or jail time based on IPC or other relevant laws.",
+    color: "bg-red-50",
+    link: "/penaltypredictor"
   }
 ];
 

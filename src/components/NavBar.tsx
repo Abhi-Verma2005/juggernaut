@@ -11,7 +11,7 @@ export default function Navbar() {
       <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="flex items-center">
           <Link href="/" className="text-2xl font-bold text-slate-900">
-            JURISSMART.
+            JUGGERNAUT.
           </Link>
         </div>
         
