@@ -6,18 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Scale, Loader2, AlertTriangle, FileCheck, Calendar, BookOpen, Ban, CheckCircle, HelpCircle, ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface LegalAssessment {
+  status: string;
+  simpleSummary: string;
+  explanation: string;
+  legalBasis: string;
+  examples: string[];
+  nextSteps: string[];
+}
+
 const IsItLegalPage = () => {
-  const [incidentDescription, setIncidentDescription] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [processingStage, setProcessingStage] = useState(0);
-  const [progressValue, setProgressValue] = useState(0);
-  const [error, setError] = useState(null);
-  const [legalAssessment, setLegalAssessment] = useState(null);
+  const [incidentDescription, setIncidentDescription] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [processingStage, setProcessingStage] = useState<number>(0);
+  const [progressValue, setProgressValue] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const [legalAssessment, setLegalAssessment] = useState<LegalAssessment | null>(null);
 
   const assessLegality = async () => {
     if (!incidentDescription) {
@@ -34,7 +42,7 @@ const IsItLegalPage = () => {
       // Initialize the Gemini API client
       const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "YOUR_API_KEY";
       const genAI = new GoogleGenerativeAI(API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      const model: GenerativeModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
       
       // Create prompt for legal assessment
       const prompt = createLegalAssessmentPrompt(incidentDescription);
@@ -57,7 +65,7 @@ const IsItLegalPage = () => {
                          text.match(/{[\s\S]*}/) ||
                          text.match(/\[[\s\S]*\]/);
           
-          let parsedResponse;
+          let parsedResponse: LegalAssessment;
           if (jsonMatch) {
             // Clean up the JSON string to parse it
             const jsonStr = jsonMatch[0].replace(/```json|```/g, '').trim();
@@ -76,7 +84,7 @@ const IsItLegalPage = () => {
           
           // Add a simple summary if not provided
           if (!parsedResponse.simpleSummary) {
-            const statusMap = {
+            const statusMap: Record<string, string> = {
               "VALID": "This situation appears to be legally valid according to Indian law.",
               "VOID": "This situation appears to be legally void according to Indian law.",
               "VOIDABLE": "This situation appears to be voidable under certain conditions according to Indian law."
@@ -116,7 +124,7 @@ const IsItLegalPage = () => {
     }
   };
 
-  const createLegalAssessmentPrompt = (description) => {
+  const createLegalAssessmentPrompt = (description: string): string => {
     const prompt = `
     You are an expert legal advisor specializing in Indian law. Analyze the following situation and determine whether it is legally VALID, VOID, or VOIDABLE according to Indian law. 
 
@@ -145,7 +153,7 @@ const IsItLegalPage = () => {
     return prompt;
   };
 
-  const getProcessingStageText = () => {
+  const getProcessingStageText = (): string => {
     switch (processingStage) {
       case 1: return "Analyzing situation...";
       case 2: return "Applying Indian legal framework...";
@@ -154,22 +162,7 @@ const IsItLegalPage = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    if (!status) return null;
-    
-    switch(status.toUpperCase()) {
-      case "VALID":
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-0 text-base px-3 py-1">Valid</Badge>;
-      case "VOID":
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-0 text-base px-3 py-1">Void</Badge>;
-      case "VOIDABLE":
-        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-0 text-base px-3 py-1">Voidable</Badge>;
-      default:
-        return <Badge className="bg-slate-100 text-slate-800 border-0 text-base px-3 py-1">Unknown</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string | undefined) => {
     if (!status) return <HelpCircle className="h-10 w-10 text-slate-400" />;
     
     switch(status.toUpperCase()) {
@@ -184,7 +177,7 @@ const IsItLegalPage = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string | undefined): string => {
     if (!status) return "bg-slate-50";
     
     switch(status.toUpperCase()) {
@@ -195,7 +188,7 @@ const IsItLegalPage = () => {
     }
   };
 
-  const getStatusTextColor = (status) => {
+  const getStatusTextColor = (status: string | undefined): string => {
     if (!status) return "text-slate-800";
     
     switch(status.toUpperCase()) {
