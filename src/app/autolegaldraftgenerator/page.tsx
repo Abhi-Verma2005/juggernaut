@@ -25,6 +25,60 @@ interface GeneratedResponse {
   explanations: Explanations;
 }
 
+// Define the necessary interfaces if they're not available from TypeScript DOM lib
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: unknown;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+  }
+}
+
 const LegalDraftGenerator = () => {
   const [documentType, setDocumentType] = useState<string>("");
   const [userDescription, setUserDescription] = useState<string>("");
@@ -56,7 +110,7 @@ const LegalDraftGenerator = () => {
       recognition.interimResults = true;
       recognition.lang = 'en-IN';
       
-      recognition.onresult = (event: { results: Iterable<unknown> | ArrayLike<unknown>; }) => {
+      recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map(result => result[0])
           .map(result => result.transcript)
@@ -93,7 +147,7 @@ const LegalDraftGenerator = () => {
         speechRecognition.stop();
       }
     };
-  }, []);
+  }, [isListening, speechRecognition]);
 
   // Toggle listening on/off
   const toggleListening = () => {

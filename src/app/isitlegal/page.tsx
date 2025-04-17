@@ -1,14 +1,15 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Scale, Loader2, AlertTriangle, FileCheck, Calendar, BookOpen, Ban, CheckCircle, HelpCircle, ArrowRight } from "lucide-react";
+import { Scale, Loader2, AlertTriangle, FileCheck, Calendar, BookOpen, Ban, CheckCircle, HelpCircle, ArrowRight, Mic, MicOff } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface LegalAssessment {
   status: string;
@@ -19,6 +20,61 @@ interface LegalAssessment {
   nextSteps: string[];
 }
 
+// Define the necessary interfaces if they're not available from TypeScript DOM lib
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: unknown;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+  }
+}
+
+
 const IsItLegalPage = () => {
   const [incidentDescription, setIncidentDescription] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -26,6 +82,75 @@ const IsItLegalPage = () => {
   const [progressValue, setProgressValue] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [legalAssessment, setLegalAssessment] = useState<LegalAssessment | null>(null);
+// Voice recognition states
+const [isListening, setIsListening] = useState<boolean>(false);
+const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+const [browserSupportsSpeech, setBrowserSupportsSpeech] = useState<boolean>(false);
+
+// Initialize speech recognition when component mounts
+useEffect(() => {
+  // Check if browser supports SpeechRecognition
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (SpeechRecognitionAPI) {
+    setBrowserSupportsSpeech(true);
+    const recognition = new SpeechRecognitionAPI();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-IN'; // Set language to Indian English
+    
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0])
+        .map(result => result.transcript)
+        .join('');
+      
+      setIncidentDescription(prev => {
+        // Only append new transcription if it's different
+        if (transcript && !prev.includes(transcript)) {
+          return prev + ' ' + transcript;
+        }
+        return prev;
+      });
+    };
+    
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error('Speech recognition error', event.error);
+      setError(`Speech recognition error: ${event.error}`);
+      setIsListening(false);
+    };
+    
+    recognition.onend = () => {
+      // Only restart if isListening is still true
+      if (isListening) {
+        recognition.start();
+      }
+    };
+    
+    setSpeechRecognition(recognition);
+  }
+  
+  // Cleanup
+  return () => {
+    if (speechRecognition) {
+      speechRecognition.stop();
+    }
+  };
+}, [isListening, speechRecognition]);
+
+// Toggle listening on/off
+const toggleListening = () => {
+  if (!speechRecognition) return;
+  
+  if (isListening) {
+    speechRecognition.stop();
+    setIsListening(false);
+  } else {
+    speechRecognition.start();
+    setIsListening(true);
+    setError(null);
+  }
+};
 
   const assessLegality = async () => {
     if (!incidentDescription) {
@@ -225,15 +350,58 @@ const IsItLegalPage = () => {
               <CardContent className="pt-6 pb-2">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="situation" className="text-gray-700 font-medium text-sm">Incident or Situation</Label>
-                    <Textarea
-                      id="situation"
-                      placeholder="Describe the legal situation or incident in detail. Include relevant dates, parties involved, agreements made, and any other important context..."
-                      className="mt-1.5 min-h-40 border-gray-300 bg-white resize-none focus:ring-blue-500 focus:border-blue-500"
-                      value={incidentDescription}
-                      onChange={(e) => setIncidentDescription(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500 mt-1.5">Be specific and provide all relevant details for accurate assessment</p>
+                    <div className="flex justify-between items-center mb-1.5">
+                      <Label htmlFor="situation" className="text-gray-700 font-medium text-sm">Incident or Situation</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className={`h-8 px-2 ${isListening ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' : 'border-gray-300 text-gray-700'}`}
+                              onClick={toggleListening}
+                              disabled={!browserSupportsSpeech}
+                            >
+                              {isListening ? 
+                                <><MicOff className="h-4 w-4 mr-1" /> Stop</> : 
+                                <><Mic className="h-4 w-4 mr-1" /> Voice Input</>
+                              }
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {browserSupportsSpeech ? 
+                              (isListening ? "Click to stop voice input" : "Click to start voice input") : 
+                              "Your browser doesn't support speech recognition"
+                            }
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="relative">
+                      <Textarea
+                        id="situation"
+                        placeholder="Describe the legal situation or incident in detail. Include relevant dates, parties involved, agreements made, and any other important context..."
+                        className="mt-1.5 min-h-40 border-gray-300 bg-white resize-none focus:ring-blue-500 focus:border-blue-500"
+                        value={incidentDescription}
+                        onChange={(e) => setIncidentDescription(e.target.value)}
+                      />
+                      {isListening && (
+                        <div className="absolute bottom-2 right-2">
+                          <div className="flex items-center space-x-1">
+                            <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                            <span className="text-xs text-red-500 font-medium">Listening...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between mt-1.5">
+                      <p className="text-xs text-gray-500">Be specific and provide all relevant details for accurate assessment</p>
+                      {browserSupportsSpeech && (
+                        <p className="text-xs text-gray-500">
+                          {isListening ? "Speak clearly - voice input active" : "Click the voice button to dictate"}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
