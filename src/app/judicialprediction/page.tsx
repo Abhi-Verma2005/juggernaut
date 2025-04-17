@@ -6,14 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Scale, Loader2, AlertTriangle, FileCheck, Calendar, BookOpen, BarChart3, CheckCircle, XCircle, HelpCircle, ArrowRight, GavelIcon, Clock, ChevronDown, ChevronUp, Percent } from "lucide-react";
+import { Scale, Loader2, AlertTriangle, FileCheck, BookOpen, BarChart3, CheckCircle, ArrowRight, Clock, ChevronDown, ChevronUp, Percent } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
-import { PieChart, Pie, BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface JudgmentPrediction {
   outcomeType: string;
