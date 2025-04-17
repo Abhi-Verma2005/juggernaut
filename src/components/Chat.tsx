@@ -98,7 +98,7 @@ const ChatComponent: React.FC = () => {
       <div className="flex-1 p-4 pb-32 mt-24 overflow-y-auto relative bg-white">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-orange-500">
-            <p className="text-center">Chat with AI</p>
+            <p className="text-center">Chat with Juggernaut</p>
           </div>
         ) : (
           messages.map((message) => (
@@ -117,12 +117,12 @@ const ChatComponent: React.FC = () => {
                 <div className="flex flex-col w-full">
                   <div className="flex items-center mb-1">
                     {message.sender === 'ai' ? (
-                      <Brain/>
+                      <Brain className='size-4'/>
                     ) : (
                       <User size={16} className="mr-1 text-white" />
                     )}
                     <span className="text-xs opacity-70 mx-1">
-                      {message.sender === 'ai' ? 'Zero' : 'You'} • {formatTime(message.timestamp)}
+                      {message.sender === 'ai' ? 'Jugg' : 'You'} • {formatTime(message.timestamp)}
                     </span>
                   </div>
                   
@@ -156,7 +156,7 @@ const ChatComponent: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Brain/>
                 <p className="text-xl font-semibold text-transparent bg-clip-text bg-[linear-gradient(to_right,#f97316_0%,#fdba74_50%,#f97316_100%)] bg-[length:200%_100%] animate-[shimmer_1.5s_infinite_linear]">
-                  Zero is Thinking
+                  Jugg is Thinking
                 </p>
               </div>
             </div>
@@ -225,7 +225,7 @@ const ChatComponent: React.FC = () => {
                 className="w-full px-3 py-2 text-base font-light text-gray-800 placeholder:text-gray-400
                   outline-none focus:ring-0 focus:border-transparent
                   rounded-lg resize-none font-sans bg-orange-50"
-                placeholder="Message AI..."
+                placeholder="Message Jugg..."
                 rows={1}
                 value={input}
                 onKeyDown={handleKeyDown}

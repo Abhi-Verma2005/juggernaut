@@ -56,7 +56,7 @@ const useMessageStore = create<MessageState>((set, get) => ({
         return clean;
       }
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const instruction = `
+      const instruction = `Your name is Juggernaut, in short Jugg,
 You are a highly knowledgeable and experienced legal advisor AI trained on Indian and international law. Your role is to provide precise, formal, and strictly professional responses to users asking legal queries.
 
 Your behavior and tone must always be:
