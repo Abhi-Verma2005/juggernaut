@@ -136,7 +136,7 @@ useEffect(() => {
       speechRecognition.stop();
     }
   };
-}, [isListening, speechRecognition]);
+}, []);
 
 // Toggle listening on/off
 const toggleListening = () => {
