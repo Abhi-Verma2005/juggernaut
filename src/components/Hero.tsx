@@ -83,6 +83,7 @@ export default function Hero() {
       2. Recommend the most relevant feature from our list
       3. Format your answer as: {RESPONSE}|{RECOMMENDED_FEATURE_ROUTE}
       4. Route is already provided and should be the best you think from these: ${features.map((f) => f.route).join(',')}
+      5. Analyze from your ability and try getting what from our list of feature would help the user most 
       
       For example: "I can help with your contract needs. Our Auto Legal Draft Generator would be perfect for this.|/autolegaldraftgenerator"`;
 
