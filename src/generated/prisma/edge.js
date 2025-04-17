@@ -121,7 +121,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/anishsuman/Documents/Projects/bennet-hackthon/law-next-app/src/generated/prisma",
+      "value": "/Users/anishsuman/Documents/Projects/okokokokok/law-next-app/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -135,7 +135,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/anishsuman/Documents/Projects/bennet-hackthon/law-next-app/prisma/schema.prisma",
+    "sourceFilePath": "/Users/anishsuman/Documents/Projects/okokokokok/law-next-app/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
