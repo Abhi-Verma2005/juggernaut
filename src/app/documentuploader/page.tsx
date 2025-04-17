@@ -1,4 +1,3 @@
-
 "use client";
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
@@ -18,24 +17,65 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-  
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+// Define types for the document analysis results
+interface Party {
+  name: string;
+  represented?: string;
+  address?: string;
+  description?: string;
+}
+
+interface DateItem {
+  date: string;
+  description: string;
+}
+
+interface Precedent {
+  case: string;
+  outcome: string;
+}
+
+interface AnalysisResults {
+  documentType: string;
+  fileNumber?: string;
+  caseNumber?: string;
+  court?: string;
+  station?: string;
+  bench?: string;
+  judgmentSummary?: string;
+  issuingAuthority?: string;
+  parties: {
+    complainant?: Party;
+    accused?: Party[];
+    petitioners?: Party[];
+    respondents?: Party[];
+  };
+  dates: DateItem[];
+  provisions: string[];
+  keyPoints: string[];
+  status: string;
+  subject: string;
+  simpleExplanation: string;
+  historicalPrecedents: Precedent[];
+  actionItems: string[];
+}
+
+type DocumentType = "fir" | "judgment" | "petition" | "contract" | "other";
 
 const LegalDocumentAnalyzer = () => {
-  const [file, setFile] = useState(null);
-  const [fileContent, setFileContent] = useState('');
-  const [documentType, setDocumentType] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [processingStage, setProcessingStage] = useState(0);
-  const [error, setError] = useState(null);
-  const [analysisResults, setAnalysisResults] = useState(null);
-  const [extractionProgress, setExtractionProgress] = useState(0);
-  const [activeView, setActiveView] = useState("overview");
-  const [dragActive, setDragActive] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
+  const [documentType, setDocumentType] = useState<DocumentType | "">("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [processingStage, setProcessingStage] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
+  const [extractionProgress, setExtractionProgress] = useState<number>(0);
+  const [activeView, setActiveView] = useState<string>("overview");
+  const [dragActive, setDragActive] = useState<boolean>(false);
   
-  const extractTextFromPDF = async (pdfFile, setExtractionProgress) => {
+  const extractTextFromPDF = async (pdfFile: File, setExtractionProgress: (progress: number) => void): Promise<string> => {
     try {
       // Dynamic import only runs on the client
       const pdfjs = await import('pdfjs-dist/build/pdf.mjs');
@@ -52,7 +92,7 @@ const LegalDocumentAnalyzer = () => {
       for (let i = 1; i <= numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const textItems = textContent.items.map((item) => item.str).join(' ');
+        const textItems = textContent.items.map((item: any) => item.str).join(' ');
         extractedText += textItems + '\n';
         
         // Update progress
@@ -66,19 +106,19 @@ const LegalDocumentAnalyzer = () => {
     }
   };
   
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(true);
   };
   
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
   };
   
-  const handleDrop = async (e) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -88,13 +128,13 @@ const LegalDocumentAnalyzer = () => {
     }
   };
   
-  const handleFileChange = async (e) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       await processFile(e.target.files[0]);
     }
   };
   
-  const processFile = async (selectedFile) => {
+  const processFile = async (selectedFile: File) => {
     setFile(selectedFile);
     setError(null);
     setAnalysisResults(null);
@@ -109,7 +149,7 @@ const LegalDocumentAnalyzer = () => {
         setProcessingStage(0);
       } else if (selectedFile.type === 'text/plain') {
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = (event: ProgressEvent<FileReader>) => {
           if (event.target?.result) {
             setFileContent(event.target.result.toString());
           }
@@ -119,7 +159,7 @@ const LegalDocumentAnalyzer = () => {
         setError("Please upload a PDF or text file");
       }
     } catch (err) {
-      setError(err.message || "Failed to process the file");
+      setError(err instanceof Error ? err.message : "Failed to process the file");
       setIsLoading(false);
       setProcessingStage(0);
     }
@@ -153,7 +193,7 @@ const LegalDocumentAnalyzer = () => {
         const text = response.text();
         
         // Parse the JSON response
-        let parsedResponse;
+        let parsedResponse: AnalysisResults;
         try {
           // Look for a JSON block in the text
           const jsonMatch = text.match(/```json([\s\S]*?)```/) || 
@@ -197,9 +237,9 @@ const LegalDocumentAnalyzer = () => {
   };
   
   // Extract structured data from text when JSON parsing fails
-  const extractStructuredData = (text, documentType) => {
+  const extractStructuredData = (text: string, documentType: DocumentType | ""): AnalysisResults => {
     // Default structure to populate
-    const result = {
+    const result: AnalysisResults = {
       documentType: documentType === "fir" ? "First Information Report (FIR)" :
                    documentType === "judgment" ? "Court Judgment" :
                    documentType === "petition" ? "Legal Petition" :
@@ -300,12 +340,12 @@ const LegalDocumentAnalyzer = () => {
   };
   
   // Helper function to extract names from text
-  const extractName = (text) => {
+  const extractName = (text: string): string => {
     const nameMatch = text.match(/:\s*([^,\n]+)/);
     return nameMatch ? nameMatch[1].trim() : "Unknown";
   };
   
-  const createPromptForDocumentType = (type, content) => {
+  const createPromptForDocumentType = (type: DocumentType | "", content: string): string => {
     const basePrompt = `
     You are a legal document analyzer specializing in Indian legal documents. 
     Analyze the following ${type} document and extract key information in a structured JSON format.
@@ -352,7 +392,7 @@ const LegalDocumentAnalyzer = () => {
   };
 
   // Get appropriate status badge color based on status text
-  const getStatusBadgeColor = (status) => {
+  const getStatusBadgeColor = (status: string | undefined): string => {
     if (!status) return "bg-slate-50 text-slate-700";
     
     const statusLower = status.toLowerCase();
@@ -372,7 +412,7 @@ const LegalDocumentAnalyzer = () => {
   };
 
   // Generate document icon based on document type
-  const getDocumentIcon = (docType) => {
+  const getDocumentIcon = (docType: DocumentType | "") => {
     switch (docType) {
       case "fir":
         return <FileText className="h-5 w-5 text-blue-600" />;
@@ -437,7 +477,7 @@ const LegalDocumentAnalyzer = () => {
                   <div className="mt-4">
                     <span className="text-slate-500 text-sm font-medium">Filed under:</span>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {analysisResults.provisions && analysisResults.provisions.map((provision, i) => (
+                      {analysisResults.provisions && analysisResults.provisions.length > 0 && analysisResults.provisions.map((provision, i) => (
                         <Badge key={i} variant="outline" className="bg-slate-50 border-slate-200 text-slate-800">
                           {provision}
                         </Badge>
@@ -468,6 +508,164 @@ const LegalDocumentAnalyzer = () => {
                       </h4>
                       <div className="flex items-center mt-2 bg-slate-50 p-3 rounded-lg">
                         <Avatar className="h-10 w-10 mr-3">
+                          <AvatarFallback className="bg-blue-100 text-blue-800">
+                            {analysisResults.parties.complainant.name ? analysisResults.parties.complainant.name.charAt(0) : "C"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{analysisResults.parties.complainant.name || "Not specified"}</p>
+                          <p className="text-xs text-slate-500">{analysisResults.parties.complainant.address || ""}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {analysisResults.parties && analysisResults.parties.accused && analysisResults.parties.accused.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                        Accused
+                      </h4>
+                      <div className="grid grid-cols-1 gap-2">
+                        {analysisResults.parties.accused.map((person, i) => (
+                          <div key={i} className="flex items-center bg-slate-50 p-3 rounded-lg">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarFallback className="bg-red-100 text-red-800">
+                                {person.name ? person.name.charAt(0) : "A"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{person.name || "Unknown"}</p>
+                              {person.description && <p className="text-xs text-slate-500">{person.description}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(!analysisResults.parties || 
+                    (!analysisResults.parties.complainant && 
+                     (!analysisResults.parties.accused || analysisResults.parties.accused.length === 0))) && 
+                    <p className="text-sm text-slate-400 italic">No party information specified in the document</p>
+                  }
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+        
+      case "judgment":
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="shadow-sm hover:shadow transition-shadow duration-200">
+                <CardHeader className="pb-2 border-b">
+                  <CardTitle className="text-md flex items-center">
+                    <Scale className="h-4 w-4 mr-2 text-purple-600" />
+                    Case Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 text-sm font-medium">Case Number</span>
+                      <span className="font-medium text-sm">{analysisResults.caseNumber || analysisResults.fileNumber || "Not specified"}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 text-sm font-medium">Court</span>
+                      <span className="font-medium text-sm">{analysisResults.court || "Not specified"}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 text-sm font-medium">Bench</span>
+                      <span className="font-medium text-sm">{analysisResults.bench || "Not specified"}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 text-sm font-medium">Status</span>
+                      <Badge variant="outline" className={getStatusBadgeColor(analysisResults.status)}>
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        {analysisResults.status || "Unknown"}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="shadow-sm hover:shadow transition-shadow duration-200">
+                <CardHeader className="pb-2 border-b">
+                  <CardTitle className="text-md flex items-center">
+                    <FileCheck className="h-4 w-4 mr-2 text-purple-600" />
+                    Judgment Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <p className="text-sm font-medium italic">{analysisResults.judgmentSummary || analysisResults.subject || "Not available"}</p>
+                  
+                  {analysisResults.provisions && analysisResults.provisions.length > 0 && (
+                    <div className="mt-4">
+                      <span className="text-slate-500 text-sm font-medium">Legal provisions cited:</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {analysisResults.provisions.map((provision, i) => (
+                          <Badge key={i} variant="outline" className="bg-purple-50 border-purple-200 text-purple-800">
+                            {provision}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+            
+            <Card className="shadow-sm hover:shadow transition-shadow duration-200">
+              <CardHeader className="pb-2 border-b">
+                <CardTitle className="text-md flex items-center">
+                  <Users className="h-4 w-4 mr-2 text-indigo-600" />
+                  Parties to the Case
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {analysisResults.parties && analysisResults.parties.petitioners && (
+                    <div className="bg-slate-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        Petitioner(s)
+                      </h4>
+                      <div className="space-y-3">
+                        {analysisResults.parties.petitioners.map((party, i) => (
+                          <div key={i} className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarFallback className="bg-blue-100 text-blue-800">
+                                {party.name ? party.name.charAt(0) : "P"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{party.name || "Unknown"}</p>
+                              {party.represented && <p className="text-xs text-slate-500">Represented by: {party.represented}</p>}
+                            </div>
+                          </div>
+                        ))}
+                        {(!analysisResults.parties.petitioners || analysisResults.parties.petitioners.length === 0) && 
+                          <p className="text-sm text-slate-400 italic">Not specified</p>
+                        }
+                      </div>
+                    </div>
+                  )}
+                  
+                  {analysisResults.parties && analysisResults.parties.respondents && (
+                    <div className="bg-slate-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                        Respondent(s)
+                      </h4>
+                      <div className="space-y-3">
+                        {analysisResults.parties.respondents.map((party, i) => (
+                          <div key={i} className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+                            <Avatar className="h-10 w-10 mr-3">
                           <AvatarFallback className="bg-blue-100 text-blue-800">
                             {analysisResults.parties.complainant.name ? analysisResults.parties.complainant.name.charAt(0) : "C"}
                           </AvatarFallback>
