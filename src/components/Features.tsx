@@ -75,7 +75,7 @@ export default function Features() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
+          {features.slice(0, 6).map((feature, index) => (
             <div 
               key={index} 
               className={`${feature.color} p-8 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden group`}
@@ -94,6 +94,26 @@ export default function Features() {
               </div>
             </div>
           ))}
+          
+          {/* The last card with special centering for the final row */}
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 flex justify-center">
+            <div 
+              className={`${features[6].color} p-8 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer relative overflow-hidden group max-w-md`}
+              onClick={() => handleCardClick(features[6].link)}
+              onMouseEnter={() => setHoveredCard(6)}
+              onMouseLeave={() => setHoveredCard(0)}
+            >
+              <div className="mb-5">{features[6].icon}</div>
+              <h3 className="text-xl font-bold text-slate-900 mb-3">{features[6].title}</h3>
+              <p className="text-slate-600">{features[6].description}</p>
+              
+              <div className={`absolute bottom-4 right-4 transition-all duration-300 transform ${hoveredCard === 6 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+                <div className="bg-white p-2 rounded-full shadow-md">
+                  <ArrowRight size={20} className="text-slate-700" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

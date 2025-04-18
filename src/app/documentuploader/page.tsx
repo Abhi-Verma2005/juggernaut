@@ -97,7 +97,7 @@ const LegalDocumentAnalyzer = () => {
       for (let i = 1; i <= numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const textItems = textContent.items.map((item : {str:string}) => item.str).join(' ');
+        const textItems = textContent.items.map((item : {str : string}) => item.str).join(' ');
         extractedText += textItems + '\n';
         
         // Update progress
