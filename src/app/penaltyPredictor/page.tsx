@@ -21,7 +21,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertTriangle, Download, Info, Scale, FileWarning, MessageSquare, Printer, DollarSign } from "lucide-react";
+import { 
+  Loader2, 
+  AlertTriangle, 
+  Download, 
+  Info, 
+  Scale, 
+  FileText, 
+  MessageSquare, 
+  Printer, 
+  DollarSign,
+  GavelIcon
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 type Message = {
   id: string;
@@ -45,6 +57,13 @@ type PenaltyData = {
   riskLevel: 'low' | 'medium' | 'high';
 };
 
+type FineChartDataEntry = {
+  name: string;
+  value: number;
+  fill: string;
+};
+
+
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
 
 export default function AIPenaltyCalculator() {
@@ -57,13 +76,12 @@ export default function AIPenaltyCalculator() {
   const [processingStage, setProcessingStage] = useState<number>(0);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [fineChartData, setFineChartData] = useState<any[]>([]);
+  const [fineChartData, setFineChartData] = useState<FineChartDataEntry[]>([]);
 
   // Parse the AI response and create penalty data
   const parsePenaltyData = (text: string): PenaltyData => {
     try {
       // Clean up the text to ensure it's valid JSON
-      // This removes any markdown formatting or extra text that might be included
       const jsonStartIndex = text.indexOf('{');
       const jsonEndIndex = text.lastIndexOf('}') + 1;
       
@@ -79,17 +97,17 @@ export default function AIPenaltyCalculator() {
         {
           name: "Minimum Fine",
           value: jsonData.minFine,
-          fill: "#22c55e", // green
+          fill: "#10b981", // emerald-500
         },
         {
           name: "Recommended Fine",
           value: jsonData.recommendedFine,
-          fill: "#eab308", // yellow
+          fill: "#f59e0b", // amber-500
         },
         {
           name: "Maximum Fine",
           value: jsonData.maxFine,
-          fill: "#ef4444", // red
+          fill: "#ef4444", // red-500
         },
       ]);
       
@@ -101,9 +119,9 @@ export default function AIPenaltyCalculator() {
   };
 
   const getSeverityColor = (score: number): string => {
-    if (score <= 3) return "#22c55e"; // green
-    if (score <= 6) return "#eab308"; // yellow
-    return "#ef4444"; // red
+    if (score <= 3) return "#10b981"; // emerald-500
+    if (score <= 6) return "#f59e0b"; // amber-500
+    return "#ef4444"; // red-500
   };
 
   const generatePenaltyData = async (userMessage: string, userCountry: string, userRegion: string) => {
@@ -124,7 +142,7 @@ export default function AIPenaltyCalculator() {
       setProgressValue(25);
       
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const penaltyPrompt = `Your name is PenaltyPro AI. 
+      const penaltyPrompt = `Your name is LegalPenalty AI. 
 You are an AI expert in legal penalties and fines across different jurisdictions.
 
 Your task is to analyze the described offense and provide detailed penalty information in JSON format according to the country and region specified.
@@ -163,12 +181,10 @@ Offense: ${userMessage}`;
       
       const result = await model.generateContent(penaltyPrompt);
       const text = result.response.text();
-      console.log(text)
+      console.log(text);
   
       setProcessingStage(3);
       setProgressValue(75);
-
-
       
       // Parse the response and create penalty data
       const parsedData = parsePenaltyData(text);
@@ -327,36 +343,37 @@ ${parsedData.consultRecommended ? '**IMPORTANT:** Consultation with a legal prof
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen">
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <div className="flex items-center mb-8 space-x-2">
-          <div className="p-2 bg-red-100 rounded-lg">
-            <FileWarning className="h-6 w-6 text-red-600" />
+    <div className="bg-slate-100 min-h-screen">
+      <div className="container mx-auto py-12 px-4 max-w-7xl">
+        <div className="flex items-center mb-10">
+          <div className="p-3 bg-indigo-100 rounded-lg mr-4">
+            <Scale className="h-7 w-7 text-indigo-700" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">AI Penalty Calculator</h1>
-            <p className="text-slate-500 mt-1">Analyze potential legal penalties and fines for various offenses</p>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Legal Penalty Analyzer</h1>
+            <p className="text-gray-600 mt-1">Professional analysis of potential legal consequences and penalties</p>
           </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="bg-slate-50 border-b border-slate-100 rounded-t-lg">
-                <CardTitle className="text-xl font-medium flex items-center text-slate-800">
-                  <Info className="h-5 w-5 mr-2 text-red-500" />
-                  Offense Information
+            <Card className="shadow-md border-gray-200 overflow-hidden">
+              <CardHeader className="bg-white pb-4">
+                <CardTitle className="text-xl font-semibold flex items-center text-gray-800">
+                  <FileText className="h-5 w-5 mr-2 text-indigo-600" />
+                  Case Information
                 </CardTitle>
-                <CardDescription>Enter details about the offense and jurisdiction</CardDescription>
+                <CardDescription className="text-gray-500">Enter details about the offense and jurisdiction</CardDescription>
               </CardHeader>
+              <Separator />
               <CardContent className="pt-6 pb-2">
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-6">
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="country">Country</Label>
+                        <Label htmlFor="country" className="text-gray-700">Jurisdiction</Label>
                         <Select value={country} onValueChange={setCountry}>
-                          <SelectTrigger className="w-full mt-1">
+                          <SelectTrigger className="w-full mt-1.5 bg-white border-gray-300">
                             <SelectValue placeholder="Select a country" />
                           </SelectTrigger>
                           <SelectContent>
@@ -375,86 +392,88 @@ ${parsedData.consultRecommended ? '**IMPORTANT:** Consultation with a legal prof
                       </div>
                       
                       <div>
-                        <Label htmlFor="region">Region/State (Optional)</Label>
+                        <Label htmlFor="region" className="text-gray-700">Region/State</Label>
                         <Input 
                           id="region"
                           value={region} 
                           onChange={(e) => setRegion(e.target.value)}
-                          className="mt-1 border-slate-300"
+                          className="mt-1.5 bg-white border-gray-300"
                           placeholder="e.g., California, New South Wales"
                         />
+                        <p className="text-xs text-gray-500 mt-1">Optional, but provides more accurate results</p>
                       </div>
                       
                       <div>
-                        <Label htmlFor="offense">Describe the Offense</Label>
+                        <Label htmlFor="offense" className="text-gray-700">Offense Description</Label>
                         <Textarea
                           id="offense"
                           value={offense}
                           onChange={(e) => setOffense(e.target.value)}
-                          className="min-h-24 border-slate-300 bg-white resize-none mt-1"
-                          placeholder="Describe the offense or violation (e.g., 'Speeding 20mph over limit', 'Tax evasion of $50,000')..."
+                          className="min-h-28 bg-white border-gray-300 resize-none mt-1.5"
+                          placeholder="Describe the offense details, circumstances, and any relevant factors..."
                         />
-                        <p className="text-xs text-slate-500 mt-1.5">Be specific about the nature and scale of the offense</p>
+                        <p className="text-xs text-gray-500 mt-1.5">Be specific about the nature, scale, and circumstances of the offense</p>
                       </div>
                     </div>
                   </div>
                 
-                  <div className="pt-4 pb-2">
+                  <div className="pt-6 pb-2">
                     <Button
                       type="submit"
-                      className="w-full bg-red-600 hover:bg-red-700"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
                       disabled={!offense.trim() || isLoading}
                     >
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
+                          Processing Analysis
                         </>
                       ) : (
-                        <>Analyze Penalties</>
+                        <>Analyze Legal Penalties</>
                       )}
                     </Button>
                   </div>
                 </form>
               </CardContent>
-              <CardFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100 rounded-b-lg">
-                <div className="text-xs text-slate-500">
-                  Powered by PenaltyPro AI
+              <CardFooter className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div className="text-xs text-gray-500 flex items-center">
+                  <Info className="h-3 w-3 mr-1 text-gray-400" />
+                  Powered by Legal AI Analysis Engine
                 </div>
               </CardFooter>
             </Card>
             
             <div className="mt-6">
-              <Alert className="bg-amber-50 border-amber-200 text-amber-800">
+              <Alert className="bg-amber-50 border-amber-200">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertTitle className="text-amber-800">Legal Disclaimer</AlertTitle>
+                <AlertTitle className="text-amber-800 font-medium">Legal Disclaimer</AlertTitle>
                 <AlertDescription className="text-amber-700 text-sm">
-                  This tool provides estimates based on available information. Always consult with a legal professional for accurate and personalized legal advice.
+                  This tool provides estimates based on available information. Results are not legal advice. Consult with a qualified legal professional for accurate guidance specific to your situation.
                 </AlertDescription>
               </Alert>
             </div>
             
             {isLoading && (
-              <Card className="mt-6 shadow-sm border-slate-200">
+              <Card className="mt-6 shadow-md border-gray-200">
                 <CardContent className="pt-6 pb-4">
                   <div className="space-y-3">
                     <div className="flex items-center">
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-gray-700">
                         {getProcessingStageText()}
                       </span>
                     </div>
-                    <Progress value={progressValue} className="h-2 bg-slate-100" />
-                    <p className="text-xs text-slate-500">This may take a moment...</p>
+                    <Progress value={progressValue} className="h-2 bg-gray-100" />
+                    <p className="text-xs text-gray-500">Analyzing legal databases and precedents...</p>
                   </div>
                 </CardContent>
               </Card>
             )}
             
             {error && (
-              <Alert variant="destructive" className="mt-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+              <Alert variant="destructive" className="mt-6 bg-red-50 border-red-200 text-red-800">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertTitle className="text-red-800">Analysis Error</AlertTitle>
+                <AlertDescription className="text-red-700">{error}</AlertDescription>
               </Alert>
             )}
           </div>
@@ -464,70 +483,78 @@ ${parsedData.consultRecommended ? '**IMPORTANT:** Consultation with a legal prof
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <Scale className="h-5 w-5 text-red-500 mr-2" />
-                    <h2 className="text-xl font-semibold tracking-tight text-slate-800">Penalty Analysis</h2>
-                    {offense && <Badge className="ml-3 bg-red-100 text-red-800 hover:bg-red-200 border-0">
-                      {offense.length > 20 ? `${offense.substring(0, 20)}...` : offense}
-                    </Badge>}
+                    <div className="p-2 bg-indigo-100 rounded-lg mr-3">
+                      <Scale className="h-5 w-5 text-indigo-700" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold tracking-tight text-gray-900">Legal Penalty Analysis</h2>
+                      <p className="text-sm text-gray-500">Generated based on the provided offense details</p>
+                    </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button onClick={downloadPenaltyReport} variant="outline" className="flex items-center border-slate-300 hover:bg-slate-50 text-slate-700">
-                      <Printer className="h-4 w-4 mr-2 text-slate-500" />
-                      Download Report
+                    <Button onClick={downloadPenaltyReport} variant="outline" className="flex items-center border-gray-300 hover:bg-gray-50 text-gray-700">
+                      <Printer className="h-4 w-4 mr-2 text-gray-500" />
+                      Export Report
                     </Button>
-                    <Button onClick={downloadPenaltyDataAsJSON} variant="outline" className="flex items-center border-slate-300 hover:bg-slate-50 text-slate-700">
-                      <Download className="h-4 w-4 mr-2 text-slate-500" />
-                      Download JSON
+                    <Button onClick={downloadPenaltyDataAsJSON} variant="outline" className="flex items-center border-gray-300 hover:bg-gray-50 text-gray-700">
+                      <Download className="h-4 w-4 mr-2 text-gray-500" />
+                      Export JSON
                     </Button>
                   </div>
                 </div>
                 
                 <Tabs defaultValue="analysis" className="w-full">
-                  <TabsList className="grid grid-cols-2 w-full mb-2 bg-slate-100">
-                    <TabsTrigger value="analysis" className="data-[state=active]:bg-white data-[state=active]:text-red-700 data-[state=active]:shadow-sm">
+                  <TabsList className="grid grid-cols-2 w-full bg-gray-100 p-1">
+                    <TabsTrigger value="analysis" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
                       <Scale className="h-4 w-4 mr-2" />
-                      Penalty Analysis
+                      Legal Analysis
                     </TabsTrigger>
-                    <TabsTrigger value="conversation" className="data-[state=active]:bg-white data-[state=active]:text-red-700 data-[state=active]:shadow-sm">
+                    <TabsTrigger value="conversation" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">
                       <MessageSquare className="h-4 w-4 mr-2" />
-                      Conversation
+                      Conversation History
                     </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="analysis" className="mt-0">
-                    <Card className="shadow-sm border-slate-200">
-                      <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
+                  <TabsContent value="analysis" className="mt-4">
+                    <Card className="shadow-md border-gray-200 overflow-hidden">
+                      <CardHeader className="pb-3 pt-4 px-6 bg-white">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg font-medium text-slate-800">
-                            <span className="flex items-center">
-                              <span className="mr-2">Offense Details</span>
+                          <div>
+                            <CardTitle className="text-lg font-semibold text-gray-900 flex items-center">
                               <Badge 
-                                className={`text-white ${
-                                  penaltyData.riskLevel === 'low' ? 'bg-green-500' : 
-                                  penaltyData.riskLevel === 'medium' ? 'bg-yellow-500' : 'bg-red-500'
+                                className={`mr-3 text-white ${
+                                  penaltyData.riskLevel === 'low' ? 'bg-emerald-500' : 
+                                  penaltyData.riskLevel === 'medium' ? 'bg-amber-500' : 'bg-red-500'
                                 }`}
                               >
                                 {penaltyData.riskLevel.toUpperCase()} RISK
                               </Badge>
-                            </span>
-                          </CardTitle>
-                          <Badge variant="outline" className="border-slate-300 text-slate-600 text-xs font-normal">
+                              <span>{penaltyData.offenseLevel}</span>
+                            </CardTitle>
+                            <CardDescription className="text-gray-500 mt-1">
+                              {offense.length > 60 ? `${offense.substring(0, 60)}...` : offense}
+                            </CardDescription>
+                          </div>
+                          <Badge variant="outline" className="border-gray-300 text-gray-600 text-xs">
                             {country}{region ? `, ${region}` : ''}
                           </Badge>
                         </div>
                       </CardHeader>
+                      <Separator />
                       <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           <div className="space-y-6">
-                            <div>
-                              <h3 className="text-sm font-medium text-slate-500">Offense Classification</h3>
-                              <p className="text-lg font-semibold text-slate-800 mt-1">{penaltyData.offenseLevel}</p>
-                            </div>
-                            
-                            <div>
-                              <h3 className="text-sm font-medium text-slate-500">Severity Score</h3>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <h3 className="text-sm font-medium text-gray-500 mb-3">Case Severity Assessment</h3>
+                              <div className="flex items-center mb-2">
+                                <div className="h-2.5 w-2.5 rounded-full mr-2" style={{ backgroundColor: getSeverityColor(penaltyData.severityScore) }}></div>
+                                <span className="font-semibold text-lg" style={{ color: getSeverityColor(penaltyData.severityScore) }}>
+                                  {penaltyData.severityScore}/10
+                                </span>
+                                <span className="text-xs text-gray-500 ml-2">Severity Score</span>
+                              </div>
                               <div className="mt-2">
-                                <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
+                                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                                   <div 
                                     className="h-full" 
                                     style={{ 
@@ -536,187 +563,207 @@ ${parsedData.consultRecommended ? '**IMPORTANT:** Consultation with a legal prof
                                     }}
                                   />
                                 </div>
-                                <div className="flex justify-between mt-1">
-                                  <span className="text-xs text-slate-500">Minor</span>
-                                  <span className="text-xs font-medium" style={{ color: getSeverityColor(penaltyData.severityScore) }}>
-                                    {penaltyData.severityScore}/10
-                                  </span>
-                                  <span className="text-xs text-slate-500">Severe</span>
+                                <div className="flex justify-between mt-1.5">
+                                  <span className="text-xs text-gray-500">Minor</span>
+                                  <span className="text-xs text-gray-500">Moderate</span>
+                                  <span className="text-xs text-gray-500">Severe</span>
                                 </div>
                               </div>
                             </div>
                             
-                            <div>
-                              <h3 className="text-sm font-medium text-slate-500">Imprisonment</h3>
-                              <div className="flex items-center mt-2">
-                                <div className={`h-3 w-3 rounded-full mr-2 ${penaltyData.imprisonmentPossible ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                                <p className="text-slate-800">
-                                  {penaltyData.imprisonmentPossible ? 
-                                    `Possible: ${penaltyData.imprisonmentDuration}` : 
-                                    'Not applicable'}
-                                </p>
+                            <div className="flex space-x-4">
+                              <div className="flex-1 bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-medium text-gray-500 mb-2">Imprisonment</h3>
+                                <div className="flex items-center">
+                                  <div className={`h-2.5 w-2.5 rounded-full mr-2 ${penaltyData.imprisonmentPossible ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                                  <p className="text-gray-800 font-medium">
+                                    {penaltyData.imprisonmentPossible ? 'Possible' : 'Not Applicable'}
+                                  </p>
+                                </div>
+                                {penaltyData.imprisonmentPossible && (
+                                  <p className="text-sm text-gray-700 mt-2">{penaltyData.imprisonmentDuration}</p>
+                                )}
+                              </div>
+                              
+                              <div className="flex-1 bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-medium text-gray-500 mb-2">Consultation</h3>
+                                <div className="flex items-center">
+                                  <div className={`h-2.5 w-2.5 rounded-full mr-2 ${penaltyData.consultRecommended ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                                  <p className="text-gray-800 font-medium">
+                                    {penaltyData.consultRecommended ? 'Strongly Advised' : 'Optional'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                             
-                            {/* New prominent fine range display */}
-                            <Card className="bg-slate-50 border border-slate-200 shadow-sm">
-                              <CardHeader className="pb-2 pt-3">
-                                <CardTitle className="text-sm font-medium flex items-center text-slate-700">
-                                  <DollarSign className="h-4 w-4 mr-1 text-green-600" />
-                                  Fine Amount Range
+                            {/* Enhanced Fine Card */}
+                            <Card className="border border-gray-200 shadow-sm overflow-hidden">
+                              <CardHeader className="pb-2 pt-3 bg-white">
+                                <CardTitle className="text-sm font-medium flex items-center text-gray-700">
+                                  <DollarSign className="h-4 w-4 mr-1.5 text-emerald-600" />
+                                  Financial Penalties
                                 </CardTitle>
                               </CardHeader>
-                              <CardContent className="pb-4">
-                                <div className="flex flex-col space-y-1">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs text-slate-500">Minimum</span>
-                                    <span className="text-sm font-semibold text-green-600">{penaltyData.minFine}</span>
+                              <Separator />
+                              <CardContent className="pt-4 pb-5">
+                                <div className="mb-4">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-gray-600">Minimum</span>
+                                    <span className="text-sm font-medium text-emerald-600">{penaltyData.minFine}</span>
                                   </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs text-slate-500">Recommended</span>
-                                    <span className="text-sm font-semibold text-yellow-600">{penaltyData.recommendedFine}</span>
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-gray-600">Recommended</span>
+                                    <span className="text-sm font-medium text-amber-600">{penaltyData.recommendedFine}</span>
                                   </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs text-slate-500">Maximum</span>
-                                    <span className="text-sm font-semibold text-red-600">{penaltyData.maxFine}</span>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">Maximum</span>
+                                    <span className="text-sm font-medium text-red-600">{penaltyData.maxFine}</span>
                                   </div>
                                 </div>
-                                <div className="mt-3 h-6 bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 rounded-md relative">
-                                  <div className="absolute top-6 left-0 w-0.5 h-2 bg-green-700"></div>
+                                
+                                <div className="h-3 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-md opacity-75"></div>
+                                
+                                <div className="relative mt-1">
+                                  <div className="absolute -top-0 left-0 w-0.5 h-2 bg-emerald-700"></div>
                                   <div 
-                                    className="absolute top-6 h-2 bg-yellow-700" 
+                                    className="absolute -top-0 h-2 bg-amber-700" 
                                     style={{ 
                                       left: `${((penaltyData.recommendedFine - penaltyData.minFine) / (penaltyData.maxFine - penaltyData.minFine)) * 100}%`,
                                       width: '2px'
                                     }}
                                   ></div>
-                                  <div className="absolute top-6 right-0 w-0.5 h-2 bg-red-700"></div>
+                                  <div className="absolute -top-0 right-0 w-0.5 h-2 bg-red-700"></div>
                                 </div>
                               </CardContent>
                             </Card>
                             
                             {penaltyData.additionalPenalties && penaltyData.additionalPenalties.length > 0 && (
-                              <div>
-                                <h3 className="text-sm font-medium text-slate-500">Additional Penalties</h3>
-                                <ul className="list-disc list-inside text-slate-700 mt-2 space-y-1">
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-medium text-gray-500 mb-2">Additional Penalties</h3>
+                                <ul className="space-y-1.5">
                                   {penaltyData.additionalPenalties.map((penalty, index) => (
-                                    <li key={index}>{penalty}</li>
+                                    <li key={index} className="flex items-start text-gray-700">
+                                      <div className="h-1.5 w-1.5 rounded-full bg-gray-400 mt-1.5 mr-2"></div>
+                                      <span>{penalty}</span>
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
-                            )}
-                            
-                            {penaltyData.consultRecommended && (
-                              <Alert className="bg-red-50 border-red-200 text-red-800">
-                                <AlertTriangle className="h-4 w-4 text-red-600" />
-                                <AlertTitle className="text-red-800">Legal Consultation Recommended</AlertTitle>
-                                <AlertDescription className="text-red-700 text-sm">
-                                  Due to the serious nature of this offense, consulting with a legal professional is strongly advised.
-                                </AlertDescription>
-                              </Alert>
                             )}
                           </div>
                           
                           <div className="space-y-6">
-                            {/* Enhanced bar chart for fines */}
-                            <div>
-                              <h3 className="text-sm font-medium text-slate-500 mb-2">Fine Range Comparison</h3>
-                              <div className="h-64">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={fineChartData} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="name" type="category" />
-                                    <Tooltip formatter={(value: string) => [`${value}`, 'Amount']} />
-                                    <Bar dataKey="value">
-                                      {fineChartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                      ))}
-                                    </Bar>
-                                  </BarChart>
-                                </ResponsiveContainer>
-                              </div>
+                            <div className="bg-gray-50 rounded-lg p-5">
+                              <h3 className="text-sm font-medium text-gray-500 mb-3">Fine Comparison</h3>
+                              <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={fineChartData} barGap={8}>
+                                  <CartesianGrid strokeDasharray="3 3" />
+                                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                  <YAxis tick={{ fontSize: 12 }} />
+                                  <Tooltip 
+                                    formatter={(value) => [`${value}`, '']}
+                                    itemStyle={{ color: '#111827' }}
+                                    contentStyle={{ backgroundColor: 'white', borderRadius: '0.375rem', borderColor: '#e5e7eb' }}
+                                  />
+                                  <Bar dataKey="value">
+                                    {fineChartData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <h3 className="text-sm font-medium text-gray-500 mb-3">Jurisdiction-Specific Information</h3>
+                              <p className="text-gray-700">{penaltyData.countrySpecific}</p>
                             </div>
                             
                             {penaltyData.legalReferences && penaltyData.legalReferences.length > 0 && (
-                              <div>
-                                <h3 className="text-sm font-medium text-slate-500">Legal References</h3>
-                                <ul className="list-disc list-inside text-slate-700 mt-2 space-y-1">
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <h3 className="text-sm font-medium text-gray-500 mb-3">Legal References</h3>
+                                <ul className="space-y-1.5">
                                   {penaltyData.legalReferences.map((reference, index) => (
-                                    <li key={index}>{reference}</li>
+                                    <li key={index} className="flex items-start text-gray-700">
+                                      <div className="mr-2 mt-0.5">
+                                        <GavelIcon className="h-3.5 w-3.5 text-gray-500" />
+                                      </div>
+                                      <span>{reference}</span>
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
                             )}
-                            
-                            <div>
-                              <h3 className="text-sm font-medium text-slate-500">Jurisdiction-Specific Notes</h3>
-                              <p className="text-slate-700 mt-1">{penaltyData.countrySpecific}</p>
-                            </div>
                           </div>
                         </div>
                       </CardContent>
-                      <CardFooter className="flex justify-end py-3 px-6 bg-slate-50 border-t border-slate-100">
-                        <div className="text-sm text-slate-500">
-                          Analysis generated on {new Date().toLocaleDateString()}
-                        </div>
-                      </CardFooter>
                     </Card>
                   </TabsContent>
                   
-                  <TabsContent value="conversation" className="mt-0">
-                    <Card className="shadow-sm border-slate-200">
-                      <CardHeader className="bg-slate-50 border-b border-slate-100 py-3 px-6">
-                        <CardTitle className="text-lg font-medium text-slate-800">Conversation History</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <div className="max-h-[500px] overflow-y-auto p-4 space-y-4">
-                          {messages.map((message) => (
-                            <div 
-                              key={message.id} 
-                              className={`p-3 rounded-lg ${
-                                message.sender === 'user' 
-                                  ? 'bg-blue-50 border border-blue-100 ml-auto mr-0 max-w-[85%]' 
-                                  : 'bg-slate-50 border border-slate-100 ml-0 mr-auto max-w-[85%]'
-                              }`}
-                            >
-                              <div className="font-medium mb-1 text-xs text-slate-600">
-                                {message.sender === 'user' ? 'You:' : 'PenaltyPro AI:'}
-                              </div>
-                              <div className="text-sm text-slate-800 whitespace-pre-wrap">{message.text}</div>
-                              <div className="text-xs text-slate-400 mt-1 text-right">
-                                {message.timestamp.toLocaleTimeString()}
-                              </div>
+                  <TabsContent value="conversation" className="mt-4">
+                    <Card className="shadow-md border-gray-200">
+                      <CardContent className="p-5">
+                        <div className="space-y-6">
+                          {messages.length > 0 ? (
+                            <div className="space-y-6">
+                              {messages.map((message) => (
+                                <div 
+                                  key={message.id} 
+                                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                  <div 
+                                    className={`rounded-xl p-4 max-w-3xl ${
+                                      message.sender === 'user' 
+                                        ? 'bg-indigo-100 text-gray-800' 
+                                        : 'bg-white border border-gray-200 shadow-sm'
+                                    }`}
+                                  >
+                                    <div className="whitespace-pre-wrap">
+                                      {message.sender === 'ai' ? (
+                                        <div className="prose prose-sm max-w-none text-gray-700">
+                                          {message.text}
+                                        </div>
+                                      ) : (
+                                        <p>{message.text}</p>
+                                      )}
+                                    </div>
+                                    <div className="mt-2 text-xs text-gray-500 text-right">
+                                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          ) : (
+                            <div className="py-12 flex flex-col items-center justify-center text-center text-gray-500">
+                              <MessageSquare className="h-12 w-12 mb-4 text-gray-300" />
+                              <h3 className="font-medium text-gray-700 mb-1">No conversation history</h3>
+                              <p className="text-sm text-gray-500">Submit a case analysis request to begin</p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
                 </Tabs>
-                
-                <Alert className="bg-slate-50 border-slate-200 text-slate-800">
-                  <Info className="h-4 w-4 text-slate-500" />
-                  <AlertTitle className="text-slate-800 font-medium">Important Notice</AlertTitle>
-                  <AlertDescription className="text-slate-700 text-sm">
-                    This penalty analysis represents general information based on available data. Specific circumstances, prior offenses, and jurisdictional variations may affect actual penalties. This information is not legal advice.
-                  </AlertDescription>
-                </Alert>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full min-h-[400px] rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-12 text-center">
-                <div className="space-y-2">
-                  <div className="flex justify-center">
-                    <div className="rounded-full bg-red-100 p-3">
-                      <Scale className="h-6 w-6 text-red-400" />
-                    </div>
+              <Card className="shadow-md h-full min-h-[600px] flex items-center justify-center border-gray-200">
+                <div className="text-center p-8">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-indigo-100">
+                    <Scale className="h-10 w-10 text-indigo-600" />
                   </div>
-                  <h3 className="text-lg font-medium text-slate-900">No penalty analysis yet</h3>
-                  <p className="text-sm text-slate-500 max-w-md">
-                    Describe an offense and submit your query to generate a detailed penalty analysis with visualizations.
+                  <h3 className="mt-6 text-lg font-semibold text-gray-900">Begin Your Legal Analysis</h3>
+                  <p className="mt-2 text-sm text-gray-500 max-w-md">
+                    Enter offense details and jurisdiction information on the left to receive a comprehensive analysis of potential legal penalties and consequences.
                   </p>
+                  <div className="mt-8 flex justify-center">
+                    <Badge variant="outline" className="px-3 py-1.5 text-xs font-medium border-gray-300 text-gray-700">
+                      Analysis provided for informational purposes only
+                    </Badge>
+                  </div>
                 </div>
-              </div>
+              </Card>
             )}
           </div>
         </div>
