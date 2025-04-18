@@ -14,7 +14,7 @@ export default function Navbar() {
         {/* Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-500">
+            <span className="text-2xl font-bold bg-clip-text bg-gradient-to-r text-black">
               Juggernaut<span className="text-slate-900">.</span>
             </span>
           </Link>
