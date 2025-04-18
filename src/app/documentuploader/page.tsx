@@ -17,7 +17,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
+//@ts-expect-error: no need here
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
@@ -83,6 +83,7 @@ const LegalDocumentAnalyzer = () => {
   const extractTextFromPDF = async (pdfFile: File, setExtractionProgress: { (value: SetStateAction<number>): void; (arg0: number): void; }) => {
     try {
       // Dynamic import only runs on the client
+      //@ts-expect-error: no need here
       const pdfjs = await import('pdfjs-dist/build/pdf.mjs');
   
       // Set the worker path
