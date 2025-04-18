@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   BarChart,
@@ -103,12 +103,6 @@ export default function AIPenaltyCalculator() {
   const getSeverityColor = (score: number): string => {
     if (score <= 3) return "#22c55e"; // green
     if (score <= 6) return "#eab308"; // yellow
-    return "#ef4444"; // red
-  };
-
-  const getRiskLevelColor = (level: string): string => {
-    if (level === "low") return "#22c55e"; // green
-    if (level === "medium") return "#eab308"; // yellow
     return "#ef4444"; // red
   };
 
