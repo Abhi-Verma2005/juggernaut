@@ -28,7 +28,7 @@ export default function Navbar() {
           <Link href="/flowchart" className="text-slate-700 hover:text-blue-500 font-medium transition-colors">
             Flowchart
           </Link>
-          <Link href="/documentUploader" className="text-slate-700 hover:text-blue-500 py-3 border-b border-slate-50 transition-colors">
+          <Link href="/documentuploader" className="text-slate-700 hover:text-blue-500 py-3 border-b border-slate-50 transition-colors">
             Docs Upload
           </Link>
           <Link href="/chat" className="text-slate-700 hover:text-blue-500 font-medium transition-colors">
