@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   ReactFlow,
@@ -21,7 +21,8 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, MessageSquare, AlertTriangle, Download, Info, Scale } from "lucide-react";
+import { Loader2, MessageSquare, AlertTriangle, Download, Info, Scale, Mic, MicOff } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type NodeData = {
   label: string;
@@ -33,6 +34,60 @@ type Message = {
   sender: 'user' | 'ai';
   timestamp: Date;
 };
+
+// Speech recognition interfaces
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: unknown;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+  }
+}
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
 
@@ -47,7 +102,76 @@ export default function AIFlowGenerator() {
   //@ts-expect-error: no need here
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
+  // Voice recognition states
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [browserSupportsSpeech, setBrowserSupportsSpeech] = useState<boolean>(false);
 
+  // Initialize speech recognition when component mounts
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+      setBrowserSupportsSpeech(true);
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN';
+      
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setPrompt(prev => {
+          // Only append new transcription if it's different
+          if (transcript && !prev.includes(transcript)) {
+            return prev + ' ' + transcript;
+          }
+          return prev;
+        });
+      };
+      
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setError(`Speech recognition error: ${event.error}`);
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        // Only restart if isListening is still true
+        if (isListening) {
+          recognition.start();
+        }
+      };
+      
+      setSpeechRecognition(recognition);
+    }
+    
+    // Cleanup
+    return () => {
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+    };
+  }, [isListening]);
+
+  // Toggle listening on/off
+  const toggleListening = () => {
+    if (!speechRecognition) return;
+    
+    if (isListening) {
+      speechRecognition.stop();
+      setIsListening(false);
+    } else {
+      speechRecognition.start();
+      setIsListening(true);
+      setError(null);
+    }
+  };
+  
   const onConnect = useCallback(
     (params: Connection) =>
       //@ts-expect-error: no need here
@@ -274,13 +398,57 @@ Now respond with the legal flowchart steps for: `;
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-6">
                     <div>
-                      <Textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        className="min-h-32 border-slate-300 bg-white resize-none"
-                        placeholder="Describe a legal process (e.g., 'Steps in filing a trademark', 'Divorce procedure')..."
-                      />
-                      <p className="text-xs text-slate-500 mt-1.5">Be specific about the legal process you want to visualize</p>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <div className="text-slate-700 font-medium">Enter Details</div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className={`h-8 px-2 ${isListening ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' : 'border-slate-300 text-slate-700'}`}
+                                onClick={toggleListening}
+                                disabled={!browserSupportsSpeech}
+                              >
+                                {isListening ? 
+                                  <><MicOff className="h-4 w-4 mr-1" /> Stop</> : 
+                                  <><Mic className="h-4 w-4 mr-1" /> Voice Input</>
+                                }
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {browserSupportsSpeech ? 
+                                (isListening ? "Click to stop voice input" : "Click to start voice input") : 
+                                "Your browser doesn't support speech recognition"
+                              }
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <div className="relative">
+                        <Textarea
+                          value={prompt}
+                          onChange={(e) => setPrompt(e.target.value)}
+                          className="min-h-32 border-slate-300 bg-white resize-none"
+                          placeholder="Describe a legal process (e.g., 'Steps in filing a trademark', 'Divorce procedure')..."
+                        />
+                        {isListening && (
+                          <div className="absolute bottom-2 right-2">
+                            <div className="flex items-center space-x-1">
+                              <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                              <span className="text-xs text-red-500 font-medium">Listening...</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex justify-between mt-1.5">
+                        <p className="text-xs text-slate-500">Be specific about the legal process you want to visualize</p>
+                        {browserSupportsSpeech && (
+                          <p className="text-xs text-slate-500">
+                            {isListening ? "Speak clearly - voice input active" : "Click the voice button to dictate"}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 

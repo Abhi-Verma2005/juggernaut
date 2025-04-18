@@ -1,15 +1,70 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { Loader2, MessageSquare, Search, ArrowRight } from "lucide-react";
+import { Loader2, MessageSquare, Search, ArrowRight, Mic, MicOff } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Initialize the Google Generative AI with your API key
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!);
+
+// Define speech recognition interfaces
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  grammars: unknown;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+  }
+}
 
 export default function Hero() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +73,77 @@ export default function Hero() {
   const [aiResponse, setAiResponse] = useState("");
   const [searchStage, setSearchStage] = useState(0);
   const router = useRouter();
+  
+  // Voice recognition states
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [browserSupportsSpeech, setBrowserSupportsSpeech] = useState<boolean>(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  // Initialize speech recognition when component mounts
+  useEffect(() => {
+    // Check if browser supports SpeechRecognition
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognitionAPI) {
+      setBrowserSupportsSpeech(true);
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN'; // Set language to Indian English
+      
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setQuery(prev => {
+          // Only update if there's new content
+          if (transcript && !prev.includes(transcript)) {
+            return transcript;
+          }
+          return prev;
+        });
+      };
+      
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error('Speech recognition error', event.error);
+        setVoiceError(`Speech recognition error: ${event.error}`);
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        // Only restart if isListening is still true
+        if (isListening) {
+          recognition.start();
+        }
+      };
+      
+      setSpeechRecognition(recognition);
+    }
+    
+    // Cleanup
+    return () => {
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
+    };
+  }, []);
+
+  // Toggle listening on/off
+  const toggleListening = () => {
+    if (!speechRecognition) return;
+    
+    if (isListening) {
+      speechRecognition.stop();
+      setIsListening(false);
+    } else {
+      speechRecognition.start();
+      setIsListening(true);
+      setVoiceError(null);
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -176,10 +302,51 @@ export default function Hero() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="E.g., 'How do I file a consumer complaint?'"
-                  className="pl-10 pr-4 py-3 border-slate-200 rounded-lg focus:ring-blue-100 focus:border-blue-300 bg-slate-50 text-slate-800"
+                  className="pl-10 pr-12 py-3 border-slate-200 rounded-lg focus:ring-blue-100 focus:border-blue-300 bg-slate-50 text-slate-800"
                   disabled={isProcessing}
                 />
+                
+                {/* Voice input button */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={`absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full ${isListening ? 'bg-red-100 text-red-600' : 'bg-transparent text-slate-400 hover:bg-slate-100'}`}
+                        onClick={toggleListening}
+                        disabled={!browserSupportsSpeech || isProcessing}
+                      >
+                        {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {browserSupportsSpeech ? 
+                        (isListening ? "Click to stop voice input" : "Click to start voice input") : 
+                        "Your browser doesn't support speech recognition"
+                      }
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
+              
+              {/* Voice input status */}
+              {isListening && (
+                <div className="mt-2 flex items-center justify-center">
+                  <div className="flex items-center space-x-1">
+                    <span className="inline-block h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span className="text-xs text-red-500 font-medium">Listening... Speak your query clearly</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Voice error message */}
+              {voiceError && (
+                <div className="mt-2">
+                  <p className="text-xs text-rose-600">{voiceError}</p>
+                </div>
+              )}
               
               {!isProcessing && !aiResponse && (
                 <div className="mt-4">
@@ -218,7 +385,10 @@ export default function Hero() {
 
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
               <p className="text-xs text-slate-400 text-center">
-                Your query will be analyzed to direct you to the most helpful legal tool
+                {browserSupportsSpeech ? 
+                  "Your query will be analyzed to direct you to the most helpful legal tool. You can also use voice input." : 
+                  "Your query will be analyzed to direct you to the most helpful legal tool."
+                }
               </p>
             </div>
           </DialogContent>
