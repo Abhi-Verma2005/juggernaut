@@ -53,7 +53,7 @@ We created a comprehensive AI-powered platform that helps users:
 
 ## 👥 Team "OK"
 
-- **Team Lead:** [You]  
+- **Team Lead:** Anish Suman
 - Abhishek Verma  
 - Ansh Sharma  
 - Keshav Chhabra  
