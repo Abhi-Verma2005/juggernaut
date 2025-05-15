@@ -96,7 +96,6 @@ Always end your answer with:
 "Disclaimer: This is an AI-generated response based on available legal information. For case-specific advice, consult a certified legal professional."
 `;
       const responseStream = await model.generateContentStream(instruction + userMessage);
-      console.log(responseStream)
       for await (const chunk of responseStream.stream) {
         const textChunk = chunk.text();
         
@@ -107,7 +106,6 @@ Always end your answer with:
             }
             return msg;
           });
-          console.log(updatedMessages)
           return { messages: updatedMessages };
         });
       }

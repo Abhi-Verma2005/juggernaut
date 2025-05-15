@@ -25,6 +25,7 @@ const ChatComponent: React.FC = () => {
   const DEFAULT_HEIGHT = "40px";
   const MAX_HEIGHT = 150;
 
+
   const tones = [
     { id: "juggernaut", name: "Juggernaut", description: "Detailed, balanced and comprehensive analysis" },
     { id: "legal", name: "Legal Check", description: "Focuses only on legality and compliance issues" },
